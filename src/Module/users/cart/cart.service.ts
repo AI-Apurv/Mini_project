@@ -51,6 +51,8 @@ export class CartService {
     cartItem.price = totalPrice;
     await this.cartRepository.save(cartItem);
 
+    
+
     // const cartItem = this.cartRepository.create({
     // //   userId,
     // //   productId,
@@ -58,5 +60,14 @@ export class CartService {
     // });
 
     // await this.cartRepository.save(cartItem);
+  }
+
+  async getCartDetailsForUser(userId: number): Promise<Cart[]> {
+    const cartItems = await this.cartRepository.find({
+      where: { user: { id: userId } },
+      relations: ['product'], // Include the product relation
+    });
+  
+    return cartItems;
   }
 }
