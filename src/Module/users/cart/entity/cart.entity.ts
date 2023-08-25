@@ -18,4 +18,6 @@ export class Cart {
 
   @Column()
   quantity: number;
+
+  
 }
