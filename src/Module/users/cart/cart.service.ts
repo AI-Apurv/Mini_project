@@ -47,6 +47,8 @@ export class CartService {
         })
     }
     console.log(cartItem)
+    const totalPrice = product.price * cartItem.quantity;
+    cartItem.price = totalPrice;
     await this.cartRepository.save(cartItem);
 
     // const cartItem = this.cartRepository.create({
