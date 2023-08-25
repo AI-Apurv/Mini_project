@@ -10,15 +10,19 @@ import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { redis, getClient } from 'src/providers/database/redis.connection';
 import {createClient} from 'redis';
 import Redis from 'ioredis';
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 const client = createClient()
+
+@ApiTags('user')
 @Controller('user')
 export class UserController {
     constructor(private readonly userService: UserService,
                 private readonly jwtService: JwtService,
                 ) {}
   
-
+    @ApiOperation({summary:'user signup'})
+    @ApiResponse({status: 200, description: 'Successful response'})
     @Post('signup')
     async signup(@Body(new ValidationPipe({ transform: true })) signupDto: SignupDto): Promise<{ message: string }> {
       await this.userService.signup(signupDto);

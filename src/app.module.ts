@@ -13,6 +13,7 @@ import { ConfigModule } from '@nestjs/config';
 import { SellerModule } from './Module/seller/seller.module';
 import { ProductModule } from './Module/product/product.module';
 import { CartModule } from './Module/users/cart/cart.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 @Module({
   imports: [
@@ -28,4 +29,5 @@ import { CartModule } from './Module/users/cart/cart.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule{}
+
