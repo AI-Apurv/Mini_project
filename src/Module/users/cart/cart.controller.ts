@@ -1,7 +1,8 @@
-import { Controller, Post, Body,Get, UseGuards, Request, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body,Get, UseGuards, Request, UnauthorizedException, NotFoundException, Put } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { JwtAuthGuard } from 'src/Middleware/jwt.auth.guard';
 import { AddToCartDto } from './dto/add-to-cart.dto';
+import { CartUpdateDto } from './dto/update-cart.dto';
 
 @Controller('cart')
 export class CartController {
@@ -29,6 +30,16 @@ export class CartController {
     console.log(userId);
     const cartDetails = await this.cartService.getCartDetailsForUser(userId);
     return cartDetails;
+  }
+
+  @Put('update-cart')
+  @UseGuards(JwtAuthGuard)
+  async updateCart(@Body() cartUpdateDto: CartUpdateDto, @Request() req: any) {
+    const userId = req.user.userId;
+    
+    await this.cartService.updateCart(userId, cartUpdateDto.productId, cartUpdateDto.quantity);
+    
+    return { message: 'Cart updated successfully.' };
   }
 
 }
