@@ -101,7 +101,7 @@ export class UserService {
       },
     });
 
-    const templatePath =  join('/home/admin2/Desktop/dem/my-nest-app/src/email-template/password-reset')
+    const templatePath =  join('/home/admin2/Desktop/dem/my-nest-app/src/email-template')
     console.log(__dirname,'----------------dir name')
     const htmlTemplate =   readFileSync(`${templatePath}/password-reset.html`, 'utf-8');
     const textTemplate =  readFileSync(`${templatePath}/password-reset.txt`, 'utf-8');
@@ -110,7 +110,8 @@ export class UserService {
       from: process.env.EMAIL,
       to: email,
       subject: 'Password Reset Request',
-      text: ` You are receiving this email because you (or someone else) has requested a password reset for your account.\n\n YOUR RESET PASSWORD OTP IS: ${OTP}\n\n If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+      // text: ` You are receiving this email because you (or someone else) has requested a password reset for your account.\n\n YOUR RESET PASSWORD OTP IS: ${OTP}\n\n If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+      html: htmlTemplate.replace('{{ OTP }}',OTP.toString())
     };
   
     transporter.sendMail(mailOptions, (error, info) => {

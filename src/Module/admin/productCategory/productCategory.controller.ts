@@ -4,11 +4,15 @@ import { CategoryService } from './productCategory.service';
 import { CategoryCreateDto } from './dto/category-create.dto';
 import { AuthGuard } from '@nestjs/passport'; 
 import { JwtAuthGuard } from 'src/Middleware/jwt.auth.guard';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+
+@ApiTags('Product-Category')
 @Controller('categories')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  @ApiOperation({summary:'Add product Category'})
   @Post('add')
   @UseGuards(JwtAuthGuard)
   async addCategory(@Body(new ValidationPipe()) createDto: CategoryCreateDto, @Request() req:any) {
@@ -18,6 +22,7 @@ export class CategoryController {
     return { message: 'Category added successfully.' };
   }
 
+  @ApiOperation({summary:'delete Category'})
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   async deleteCategory(@Param('id') id: number, @Request() req:any) {

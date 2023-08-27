@@ -3,12 +3,15 @@ import { CartService } from './cart.service';
 import { JwtAuthGuard } from 'src/Middleware/jwt.auth.guard';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { CartUpdateDto } from './dto/update-cart.dto';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Carts')
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService,
               ) {}
 
+  @ApiOperation({summary:'Add item to cart'})            
   @Post('add-to-cart')
   @UseGuards(JwtAuthGuard)
   async addToCart(@Body() addToCartDto: AddToCartDto, @Request() req: any) {
@@ -22,6 +25,7 @@ export class CartController {
     return { message: 'Product added to cart successfully.' };
   }
 
+  @ApiOperation({summary:'Get cart details'})
   @Get('get-cart-details')
   @UseGuards(JwtAuthGuard)
   async getCartDetails(@Request() req: any) {
@@ -32,6 +36,7 @@ export class CartController {
     return cartDetails;
   }
 
+  @ApiOperation({summary:'Update the cart items'})
   @Put('update-cart')
   @UseGuards(JwtAuthGuard)
   async updateCart(@Body() cartUpdateDto: CartUpdateDto, @Request() req: any) {

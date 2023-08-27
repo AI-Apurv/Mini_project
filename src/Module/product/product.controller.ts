@@ -4,18 +4,21 @@ import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { JwtAuthGuard } from 'src/Middleware/jwt.auth.guard';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductResponseMessages } from 'src/common/responses/product.response';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Products')
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
- 
+  @ApiOperation({summary:'Add products'})
   @UseGuards(JwtAuthGuard)
   @Post('add')
   async createProduct(@Body() createProductDto: CreateProductDto, @Request() req: any) {
     const seller = req.user;
     if(seller.role !== 'seller'){
-        throw new UnauthorizedException('You are not authorizede to perform this action')
+        throw new UnauthorizedException(ProductResponseMessages.UNAUTHORIZED_ACTION)
     }
     // if(seller.verify === false)
     // {
@@ -24,9 +27,10 @@ export class ProductController {
     console.log(seller.verify,'------------------verify')
     const sellerId = req.user.userId;
     await this.productService.createProduct(createProductDto,sellerId);
-    return { message: 'Product created successfully.' };
+    return { message: ProductResponseMessages.PRODUCT_CREATED };
   }
 
+  @ApiOperation({summary:'Update the products'})
   @UseGuards(JwtAuthGuard)
   @Patch('update/:productId')
   async updateProduct(@Param('productId') productId:number,
@@ -37,7 +41,7 @@ export class ProductController {
       return updateProduct;
   }
 
- 
+  @ApiOperation({summary:'Get product category'})
   @Get()
   getProductCategories() {
     const categoriesWithCounts = [
@@ -47,13 +51,14 @@ export class ProductController {
     ];
     return categoriesWithCounts;
   }
-
+  @ApiOperation({summary:'Get Product details'})
   @Get(':parentId')
   async getCategoryDetails(@Param('parentId') parentId: number) {
     const details = await this.productService.getCategoryDetailsByParentId(parentId);
     return details;
   }
 
+  @ApiOperation({summary:'Get Product details'})
   @Get('product-details/:productId')
   async getProductDetails(@Param('productId') productId: number,
                           @Query('page',ParseIntPipe) page: number = 1,

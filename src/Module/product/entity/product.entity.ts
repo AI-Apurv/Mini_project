@@ -19,6 +19,9 @@ export class Product {
   @Column()
   price: number;
 
+  @Column({nullable: true})
+  Image: string;
+
   @ManyToOne(() => Category, { onDelete: 'SET NULL' }) // Define relationship with Category entity
   @JoinColumn({ name: 'categoryId' })
   category: Category;

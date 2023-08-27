@@ -10,25 +10,29 @@ import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { redis, getClient } from 'src/providers/database/redis.connection';
 import {createClient} from 'redis';
 import Redis from 'ioredis';
+import { userResponseMessages } from "src/common/responses/user.response";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 const client = createClient()
 
-@ApiTags('user')
+
+
+@ApiTags('Users')
 @Controller('user')
 export class UserController {
     constructor(private readonly userService: UserService,
                 private readonly jwtService: JwtService,
                 ) {}
   
-    @ApiOperation({summary:'user signup'})
-    @ApiResponse({status: 200, description: 'Successful response'})
+
+    @ApiOperation({summary:'User Signup'})
     @Post('signup')
     async signup(@Body(new ValidationPipe({ transform: true })) signupDto: SignupDto): Promise<{ message: string }> {
       await this.userService.signup(signupDto);
-      return { message: 'User registered successfully' };
+      return { message: userResponseMessages.SIGNUP_SUCCESS };
     }
   
+    @ApiOperation({summary:'User Login'})
     @Post('login')
     async login(@Body(new ValidationPipe()) loginDto: LoginDto): Promise<{ accessToken: string }> {
       const user = await this.userService.validateUser(loginDto.email, loginDto.password);
@@ -36,17 +40,15 @@ export class UserController {
       if (!user) {
         throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
       }
-  
-      const payload = { sub: user.id, email: user.email, role: user.role};
-  
-      const accessToken = this.jwtService.sign(payload); 
 
+      const payload = { sub: user.id, email: user.email, role: user.role};
+      const accessToken = this.jwtService.sign(payload); 
       await client.connect();
       await client.set(user.id.toString(), 'true')
-  
       return { accessToken };
     }
 
+    @ApiOperation({summary:'Update user details'})
     @Patch('update-users')
     @UseGuards(JwtAuthGuard)
     async updateDetails(
@@ -56,30 +58,33 @@ export class UserController {
       try{
         const {email} = req.user;
         await this.userService.updateUserDetails(email, updateUserDto);
-        return {message: 'User details updated successfully'}
+        return {message: userResponseMessages.UPDATE_SUCCESS}
       }catch(error){
         throw new HttpException('Failed to update user details', HttpStatus.INTERNAL_SERVER_ERROR)
       }
     }
   
+    @ApiOperation({summary:'Delete user'})
     @Delete('delete-user')
     @UseGuards(JwtAuthGuard)
     async deleteUser(@Request() req: any): Promise<{message: string}>{
       try{
         const {email} = req.user;
         await this.userService.deleteUser(email);
-        return {message: 'User deleted successfully'}
+        return {message: userResponseMessages.DELETE_SUCCESS}
       } catch(error){
         throw new HttpException('Failed to delete user',HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }
 
+    @ApiOperation({summary:'user forgot password'})
     @Post('forgot-password')
     async sendPasswordResetEmail(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
       await this.userService.sendPasswordResetEmail(forgotPasswordDto.email);
-      return { message: 'Password reset OTP sent to email' };
+      return { message: userResponseMessages.FORGOT_PASSWORD_EMAIL_SENT };
     }
 
+    @ApiOperation({summary:'Password reset email'})
     @Post('reset-password')
     @HttpCode(200)
     async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<any> {
@@ -90,19 +95,20 @@ export class UserController {
         const result = await this.userService.resetPassword(email, otp, newPassword);
         console.log(result)
         return {
-          message: result,
+          message: userResponseMessages.PASSWORD_RESET_SUCCESS,
           action: 'Please login: http://localhost:3000/userlogin',
         };
       } catch (error) {
         console.log(error);
         return {
           
-          message: 'Password reset failed',
+          message: userResponseMessages.PASSWORD_RESET_FAILED,
           action: 'TRY AGAIN HERE: http://localhost:3000/forgotPassword',
         };
       }
     }
 
+    @ApiOperation({summary:'User Logout'})
     @Post('logout')
     @UseGuards(JwtAuthGuard)
     async logout(@Request() req: any): Promise<{ message: string }> {
@@ -127,7 +133,7 @@ export class UserController {
           // Set isActive to false for the active session
           await this.userService.updateSession(session, false);
         }
-        return { message: 'Logged out successfully' };
+        return { message: userResponseMessages.LOGOUT_SUCCESS };
       } catch (error) {
         throw new HttpException('Failed to logout', HttpStatus.INTERNAL_SERVER_ERROR);
       }
