@@ -9,7 +9,8 @@ import { UpadteUserDto } from './dto/update-user.dto';
 import * as nodemailer from 'nodemailer';
 import { redis, getClient } from 'src/providers/database/redis.connection';
 import { Session } from './entity/session.entity';
-
+import { join } from 'path';
+import { readFileSync } from 'fs';
 
 @Injectable()
 export class UserService {
@@ -99,6 +100,11 @@ export class UserService {
         pass: 'eabbxcqraimxltzf' ,
       },
     });
+
+    const templatePath =  join('/home/admin2/Desktop/dem/my-nest-app/src/email-template/password-reset')
+    console.log(__dirname,'----------------dir name')
+    const htmlTemplate =   readFileSync(`${templatePath}/password-reset.html`, 'utf-8');
+    const textTemplate =  readFileSync(`${templatePath}/password-reset.txt`, 'utf-8');
   
     const mailOptions = {
       from: process.env.EMAIL,

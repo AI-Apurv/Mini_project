@@ -44,7 +44,7 @@ export class SellerService {
       throw new UnauthorizedException('Invalid credentials.');
     }
     console.log(seller.role)
-    const payload = { id: seller.sellerid, email: seller.email, role:seller.role };
+    const payload = { sub: seller.sellerid, email: seller.email, role:seller.role };
     const token = this.jwtService.sign(payload);
 
     return token;

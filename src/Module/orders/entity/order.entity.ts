@@ -22,6 +22,9 @@ export class Order {
   @CreateDateColumn()
   orderDate: Date;
 
+  @Column()
+  userId : number;
+
  
 
 

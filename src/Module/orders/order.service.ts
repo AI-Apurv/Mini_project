@@ -12,6 +12,8 @@ export class OrderService {
     private readonly cartRepository: Repository<Cart>,
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>
     ){}
 
     async createOrderForUser(userId: number) {
@@ -19,19 +21,21 @@ export class OrderService {
           where: { user: { id: userId } },
           relations: ['product'],
         });
-      
+        console.log(cartItems,'----------cartItems----------')
         if (!cartItems || cartItems.length === 0) {
           throw new NotFoundException('No items found in the cart.');
         }
-      
+        
         let totalAmount = 0;
       
         const orders = cartItems.map(cartItem => {
           totalAmount += cartItem.product.price * cartItem.quantity;
       
           const order = new Order();
-          order.user = cartItem.user;
-          console.log(order.user)
+        //   order.user = userId;
+          console.log(order.user,'-------order.user1------------')
+          console.log(order.user,'-------order.user2------------')
+          console.log(order.user,'-------order.user3------------')
         //   order.product = cartItem.product;
           order.totalPrice = cartItem.product.price * cartItem.quantity;
       
@@ -39,9 +43,15 @@ export class OrderService {
         });
       
         await this.orderRepository.save(orders);
+
+        for (const cartItem of cartItems) {
+            const product = cartItem.product;
+            product.quantity -= cartItem.quantity;
+            await this.productRepository.save(product);
+          }
         await this.cartRepository.remove(cartItems);
       
-        return { message: 'Order created successfully.', totalAmount };
+        return { message: `Order created successfully.Order details ${cartItems} and totalAmount ${totalAmount}`};
       }
       
 }

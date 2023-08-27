@@ -1,8 +1,9 @@
 // product.controller.ts
-import { Controller, Post, Body, UseGuards, Get, Param, Request, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Request, UnauthorizedException, Patch, Query, ParseIntPipe } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { JwtAuthGuard } from 'src/Middleware/jwt.auth.guard';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Controller('products')
 export class ProductController {
@@ -13,12 +14,27 @@ export class ProductController {
   @Post('add')
   async createProduct(@Body() createProductDto: CreateProductDto, @Request() req: any) {
     const seller = req.user;
-    console.log(seller.role,seller.sellerid)
     if(seller.role !== 'seller'){
         throw new UnauthorizedException('You are not authorizede to perform this action')
     }
-    await this.productService.createProduct(createProductDto);
+    // if(seller.verify === false)
+    // {
+    //   throw new UnauthorizedException('You are not a verified seller')
+    // }
+    console.log(seller.verify,'------------------verify')
+    const sellerId = req.user.userId;
+    await this.productService.createProduct(createProductDto,sellerId);
     return { message: 'Product created successfully.' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('update/:productId')
+  async updateProduct(@Param('productId') productId:number,
+                      @Body() updateProductDto:UpdateProductDto,
+                      @Request() req)
+  {
+      const updateProduct = await this.productService.updateProduct(productId, updateProductDto, req.user.userId);
+      return updateProduct;
   }
 
  
@@ -39,9 +55,11 @@ export class ProductController {
   }
 
   @Get('product-details/:productId')
-  async getProductDetails(@Param('productId') productId: number){
+  async getProductDetails(@Param('productId') productId: number,
+                          @Query('page',ParseIntPipe) page: number = 1,
+                          @Query('limit',ParseIntPipe) limit: number= 10){
     console.log('inside controller',productId)
-    const details = await this.productService.getProducts(productId)
+    const details = await this.productService.getProducts(productId,page,limit)
     return details;
   }
 
