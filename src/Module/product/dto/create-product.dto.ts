@@ -18,4 +18,6 @@ export class CreateProductDto {
   @IsNotEmpty()
   @IsNumber()
   categoryId: number;
+
+  Image: string;
 }

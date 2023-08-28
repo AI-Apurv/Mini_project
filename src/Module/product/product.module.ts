@@ -6,12 +6,23 @@ import { ProductService } from './product.service';
 import { Product } from './entity/product.entity';
 import { Category } from '../admin/productCategory/entity/category.entity'; // Import the Category entity
 import { Seller } from '../seller/entity/seller.entity';
-// ... other imports
-
+import { MulterModule } from '@nestjs/platform-express';
+import * as multer from 'multer'
 @Module({
   imports: [
     TypeOrmModule.forFeature([Product, Category,Seller]), // Include Category in forFeature
-    
+    MulterModule.register({
+      dest: './uploads', // Destination folder where uploaded files will be stored
+      storage: multer.diskStorage({
+        destination: function (req, file, cb) {
+          cb(null, './uploads'); // Destination folder for uploaded images
+        },
+        filename: function (req, file, cb) {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+          cb(null, file.fieldname + '-' + uniqueSuffix);
+        },
+    }),
+  })
   ],
   controllers: [ProductController],
   providers: [ProductService],

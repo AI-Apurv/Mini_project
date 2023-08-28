@@ -17,13 +17,22 @@ export class Order {
   products: Product;
 
   @Column({nullable: true})
+  quantity: number;
+
+  @Column({nullable: true})
   totalPrice: number;
 
   @CreateDateColumn()
   orderDate: Date;
 
-  @Column()
+  @Column({nullable:true})
   userId : number;
+
+  @Column({nullable: true})
+  productId: number;
+
+  @Column({default: true})
+  orderActive: true
 
  
 

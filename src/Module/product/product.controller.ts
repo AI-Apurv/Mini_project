@@ -1,21 +1,27 @@
 // product.controller.ts
-import { Controller, Post, Body, UseGuards, Get, Param, Request, UnauthorizedException, Patch, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Request, UnauthorizedException, Patch, Query, ParseIntPipe, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { JwtAuthGuard } from 'src/Middleware/jwt.auth.guard';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductResponseMessages } from 'src/common/responses/product.response';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+
 
 @ApiTags('Products')
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
+
+  @UseInterceptors(FileInterceptor('image'))
   @ApiOperation({summary:'Add products'})
   @UseGuards(JwtAuthGuard)
   @Post('add')
-  async createProduct(@Body() createProductDto: CreateProductDto, @Request() req: any) {
+  async createProduct(@Body() createProductDto: CreateProductDto,
+                      // @UploadedFile() Image: Express.Multer.File,
+                      @Request() req: any) {
     const seller = req.user;
     if(seller.role !== 'seller'){
         throw new UnauthorizedException(ProductResponseMessages.UNAUTHORIZED_ACTION)
@@ -26,6 +32,9 @@ export class ProductController {
     // }
     console.log(seller.verify,'------------------verify')
     const sellerId = req.user.userId;
+    // if(Image){
+    //   createProductDto.Image = Image.filename;
+    // }
     await this.productService.createProduct(createProductDto,sellerId);
     return { message: ProductResponseMessages.PRODUCT_CREATED };
   }
