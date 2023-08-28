@@ -7,6 +7,7 @@ import { Seller } from 'src/Module/seller/entity/seller.entity';
 import { Product } from 'src/Module/product/entity/product.entity';
 import { Cart } from 'src/Module/users/cart/entity/cart.entity';
 import { Order } from 'src/Module/orders/entity/order.entity';
+import { Review } from 'src/Module/product/reviews/entity/review.entity';
 
 const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'postgres',
@@ -16,7 +17,7 @@ const typeOrmConfig: TypeOrmModuleOptions = {
   password: '      ',
   database: 'Myntra',
   synchronize: true,
-  entities: [User,Admin,Session,Category,Seller,Product,Cart,Order],
+  entities: [User,Admin,Session,Category,Seller,Product,Cart,Order,Review],
 };
 
 export default typeOrmConfig;

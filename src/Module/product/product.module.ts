@@ -8,6 +8,7 @@ import { Category } from '../admin/productCategory/entity/category.entity'; // I
 import { Seller } from '../seller/entity/seller.entity';
 import { MulterModule } from '@nestjs/platform-express';
 import * as multer from 'multer'
+import { ReviewsModule } from './reviews/review.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Product, Category,Seller]), // Include Category in forFeature
@@ -22,7 +23,7 @@ import * as multer from 'multer'
           cb(null, file.fieldname + '-' + uniqueSuffix);
         },
     }),
-  })
+  }), ReviewsModule
   ],
   controllers: [ProductController],
   providers: [ProductService],
