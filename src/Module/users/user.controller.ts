@@ -7,7 +7,7 @@ import { JwtAuthGuard } from "src/Middleware/jwt.auth.guard";
 import { UpadteUserDto } from "./dto/update-user.dto";
 import { ForgotPasswordDto } from "./dto/forget-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
-import { redis, getClient } from 'src/providers/database/redis.connection';
+import { redis } from 'src/providers/database/redis.connection';
 import {createClient} from 'redis';
 import Redis from 'ioredis';
 import { userResponseMessages } from "src/common/responses/user.response";
@@ -56,7 +56,14 @@ export class UserController {
       @Request() req: any
     ): Promise<{message: string}>{
       try{
-        const {email} = req.user;
+        const {email, userId} = req.user;
+        const sessionStatus = await redis.get(userId.toString());
+
+        if (sessionStatus === 'false') {
+        return {
+          message: 'User has logged out. Please log in again.',
+         };
+      }
         await this.userService.updateUserDetails(email, updateUserDto);
         return {message: userResponseMessages.UPDATE_SUCCESS}
       }catch(error){
@@ -69,7 +76,14 @@ export class UserController {
     @UseGuards(JwtAuthGuard)
     async deleteUser(@Request() req: any): Promise<{message: string}>{
       try{
-        const {email} = req.user;
+        const {email, userId} = req.user;
+        const sessionStatus = await redis.get(userId.toString());
+
+        if (sessionStatus === 'false') {
+        return {
+          message: 'User has logged out. Please log in again.',
+         };
+      }
         await this.userService.deleteUser(email);
         return {message: userResponseMessages.DELETE_SUCCESS}
       } catch(error){
@@ -113,26 +127,8 @@ export class UserController {
     @UseGuards(JwtAuthGuard)
     async logout(@Request() req: any): Promise<{ message: string }> {
       try {
-        const { userId } = req.user;
-        console.log(userId);
-       
-        await client.connect();
-
-        const sessionBefore = await client.get(userId);
-        console.log("Session value before database query:", sessionBefore);
-
-        
-
-        await client.set(userId, 'false')
-        console.log("bye")
-        // Find the user's active session
-        console.log(client.get(userId))
-        const session = await this.userService.getActiveSession(userId);
-        console.log(session,"-----------------------")
-        if (session) {
-          // Set isActive to false for the active session
-          await this.userService.updateSession(session, false);
-        }
+        const  userId  = (req.user.userId).toString();
+        await redis.set(userId, 'false')
         return { message: userResponseMessages.LOGOUT_SUCCESS };
       } catch (error) {
         throw new HttpException('Failed to logout', HttpStatus.INTERNAL_SERVER_ERROR);

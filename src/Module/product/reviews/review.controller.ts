@@ -2,7 +2,7 @@ import { Controller,Get, Post,Put ,UseGuards,Request,Param,Body } from "@nestjs/
 import { JwtAuthGuard } from "src/Middleware/jwt.auth.guard";
 import { CreateReviewDto } from "./dto/create-review.dto";
 import { ReviewService } from "./review.service";
-
+import { redis } from "src/providers/database/redis.connection";
 
 @Controller('reviews')
 export class ReviewController {
@@ -21,6 +21,12 @@ export class ReviewController {
         @Body() createReviewDto: CreateReviewDto, 
     ) {
         const userId = req.user.userId;
+        const sessionStatus = await redis.get(userId) 
+        if (sessionStatus === 'false') {
+         return {
+        message: 'User has logged out. Please log in again.',
+        };
+    }
         return this.reviewService.leaveReview(userId, productId, createReviewDto.rating, createReviewDto.comment);
     }
 
@@ -33,6 +39,12 @@ export class ReviewController {
         @Body() updateReviewDto: CreateReviewDto,
     ) {
         const userId = req.user.userId;
+        const sessionStatus = await redis.get(userId) 
+        if (sessionStatus === 'false') {
+         return {
+        message: 'User has logged out. Please log in again.',
+         };
+    }
         console.log('userId----------------',userId)
         return this.reviewService.updateReview(userId, productId, updateReviewDto);
     }

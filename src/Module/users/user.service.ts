@@ -7,7 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from './dto/user-signup.dto';
 import { UpadteUserDto } from './dto/update-user.dto';
 import * as nodemailer from 'nodemailer';
-import { redis, getClient } from 'src/providers/database/redis.connection';
+import { redis } from 'src/providers/database/redis.connection';
 import { Session } from './entity/session.entity';
 import { join } from 'path';
 import { readFileSync } from 'fs';
@@ -65,7 +65,7 @@ export class UserService {
     }
     user.firstName = updateUserDto.firstName;
     user.lastName = updateUserDto.lastName;
-  
+    user.contactNumber = updateUserDto.contactNumber;
     await this.userRepository.save(user);
    }
   
@@ -86,9 +86,8 @@ export class UserService {
     }
   
     const OTP = Math.floor(1000 + Math.random() * 9000);
-   
-    const client = getClient();
-    await client.set(email, OTP);
+    await redis.set(email,OTP.toString())
+
     
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -96,13 +95,12 @@ export class UserService {
       port: 465,
       secure: true,
       auth: {
-        user: 'ajpatel5848@gmail.com',
-        pass: 'eabbxcqraimxltzf' ,
+        user: 'apurv1@appinventiv.com',
+        pass: 'atldfmccuufdvqzm' ,
       },
     });
 
     const templatePath =  join('/home/admin2/Desktop/dem/my-nest-app/src/email-template')
-    console.log(__dirname,'----------------dir name')
     const htmlTemplate =   readFileSync(`${templatePath}/password-reset.html`, 'utf-8');
     const textTemplate =  readFileSync(`${templatePath}/password-reset.txt`, 'utf-8');
   
@@ -110,7 +108,6 @@ export class UserService {
       from: process.env.EMAIL,
       to: email,
       subject: 'Password Reset Request',
-      // text: ` You are receiving this email because you (or someone else) has requested a password reset for your account.\n\n YOUR RESET PASSWORD OTP IS: ${OTP}\n\n If you did not request this, please ignore this email and your password will remain unchanged.\n`,
       html: htmlTemplate.replace('{{ OTP }}',OTP.toString())
     };
   

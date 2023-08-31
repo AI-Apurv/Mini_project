@@ -22,6 +22,9 @@ export class Order {
   @Column({nullable: true})
   totalPrice: number;
 
+  // @Column({nullable:true})
+  // email: number;
+
   @CreateDateColumn()
   orderDate: Date;
 

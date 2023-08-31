@@ -17,7 +17,7 @@ export class SellerService {
   ) {}
 
   async signup(signupDto: SellerSignupDto) {
-    const { name, email, password } = signupDto;
+    const { name, email, password , contactNumber} = signupDto;
 
     const existingSeller = await this.sellerRepository.findOne({where:{ email }});
     if (existingSeller) {
@@ -30,6 +30,7 @@ export class SellerService {
       name,
       email,
       password: hashedPassword,
+      contactNumber
     });
 
     await this.sellerRepository.save(newSeller);
@@ -43,8 +44,7 @@ export class SellerService {
     if (!seller || !(await bcrypt.compare(password, seller.password))) {
       throw new UnauthorizedException('Invalid credentials.');
     }
-    console.log(seller.role)
-    const payload = { sub: seller.sellerid, email: seller.email, role:seller.role };
+    const payload = { sub: seller.sellerid, email: seller.email, role:seller.role , verify:seller.verify};
     const token = this.jwtService.sign(payload);
 
     return token;

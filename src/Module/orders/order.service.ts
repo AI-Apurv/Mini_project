@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cart } from '../users/cart/entity/cart.entity';
 import { Repository } from 'typeorm';
@@ -25,7 +25,7 @@ export class OrderService {
           where: { user: { id: userId } },
           relations: ['product'],
         });
-        console.log('-------------userid inside service ------------',cartItems);
+        // console.log('-------------userid inside service ------------',cartItems);
         if (!cartItems || cartItems.length === 0) {
           throw new NotFoundException('No items found in the cart.');
         }
@@ -45,7 +45,7 @@ export class OrderService {
 
         const savedOrders = await this.orderRepository.save(orders);
 
-        console.log('----------------orders----------------', orders)
+        // console.log('----------------orders----------------', orders)
 
   
         await this.orderRepository.save(orders);
@@ -55,7 +55,7 @@ export class OrderService {
             product.quantity -= cartItem.quantity;
             await this.productRepository.save(product);
 
-            console.log('-----------------products-----------------', product)
+            // console.log('-----------------products-----------------', product)
 
           }
 
@@ -100,5 +100,6 @@ export class OrderService {
         return { message: 'Order canceled successfully.' };
 
       }
-      
+    
+
 }

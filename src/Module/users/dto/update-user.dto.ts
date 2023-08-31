@@ -1,9 +1,13 @@
 import { IsNotEmpty } from "class-validator";
-
+import { ApiProperty } from "@nestjs/swagger";
 export class UpadteUserDto{
-    @IsNotEmpty()
+    
+    @ApiProperty()
     firstName: string;
-
-    @IsNotEmpty()
+   
+    @ApiProperty()
     lastName: string;
+
+    @ApiProperty()
+    contactNumber: string
 }

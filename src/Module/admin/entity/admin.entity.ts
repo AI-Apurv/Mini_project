@@ -23,4 +23,10 @@ export class Admin {
 
   @Column({default: 'admin'})
   role: string;
+
+  @Column({ default: false }) // Default value is false (two-factor authentication is not enabled)
+  isTwoFactorEnabled: boolean;
+
+  @Column({nullable: true})
+  secretKey: string 
 }

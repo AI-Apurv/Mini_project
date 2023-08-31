@@ -1,3 +1,4 @@
+//git fetch vs git fetch --all
 import { Injectable, NotFoundException, UnauthorizedException, forwardRef } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -8,6 +9,9 @@ import { JwtService } from "@nestjs/jwt";
 import { AdminLoginDto } from "./dto/admin-login.dto";
 import { AdminUpdateDto } from "./dto/admin-update.dto";
 import { Seller } from "../seller/entity/seller.entity";
+import * as speakeasy from 'speakeasy';
+import * as qrcode from 'qrcode'
+import * as fs from 'fs';
 
 @Injectable()
 export class AdminService {
@@ -21,18 +25,17 @@ export class AdminService {
   ) {}
 
   async initAdmin() {
-    // const adminUsername = this.configService.get<string>('ADMIN_USERNAME');
     
-    const existingAdmin = await this.adminRepository.findOne({ where: { username: 'admin' } });
-    // const existingAdmin = false;
+    const existingAdmin = await this.adminRepository.findOne({ where: { username: 'as' } });
     if (!existingAdmin) {
       const newAdmin = this.adminRepository.create({
-        username: 'admin',
-        firstName: 'admin',
-        lastName: 'user',
-        email: 'admin@exxample.com',
+        username: 'as',
+        firstName: 'a',
+        lastName: 's',
+        email: 'as@gmail.com',
         password: await bcrypt.hash('Admin@123456', 10),
       });
+      
 
       await this.adminRepository.save(newAdmin);
       console.log('Admin initialized.');
@@ -42,10 +45,10 @@ export class AdminService {
   }
 
   async createAdmin() {
-    const adminUsername = 'admin';
-    const adminFirstName = 'admin';
-    const adminLastName = 'user';
-    const adminEmail = 'admin@exxample.com';
+    const adminUsername = 'as';
+    const adminFirstName = 'a';
+    const adminLastName = 'a';
+    const adminEmail = 'as@gamil.com';
     const adminPassword = 'Admin@123456';
       
     const admin = new Admin();
@@ -59,16 +62,7 @@ export class AdminService {
     await this.adminRepository.save(admin);
   }
 
-  async login(loginDto: AdminLoginDto): Promise<string> {
-    const { username, password } = loginDto;
-    const admin = await this.adminRepository.findOne({where:{username}});
-
-    if (admin && (await bcrypt.compare(password, admin.password))) {
-      const payload = { role:admin.role,username: admin.username, sub: admin.adminid };
-      return this.jwtService.sign(payload);
-    }
-    throw new UnauthorizedException('Invalid credentials');
-  }
+ 
 
   async updateAdmin(updateDto: AdminUpdateDto, userId: number, userRole: string) {
     const admin = await this.adminRepository.findOne({where:{adminid:userId}});
@@ -106,4 +100,81 @@ export class AdminService {
     seller.verify = true;
     await this.sellerRepository.save(seller);
   }
+
+  async login(loginDto: AdminLoginDto): Promise<string> {
+    console.log('inside the service-------')
+    const { email, password,otp} = loginDto;
+    const admin = await this.adminRepository.findOne({where:{email}});
+    console.log('admin---------------',admin)
+    if (!admin) {
+      throw new NotFoundException('Admin not found.');
+    }
+
+    
+  
+  if (admin && (await bcrypt.compare(password, admin.password))) {
+    var verified = await speakeasy.totp.verify({      
+      secret: admin.secretKey,      
+      encoding: "ascii",      
+      token: otp,    
+    });    
+    console.log(verified);
+    if(!verified)
+    {
+      throw new UnauthorizedException('Invalid token')
+    }
+    else {
+      const payload = { role:admin.role,username: admin.username, sub: admin.adminid };
+      return this.jwtService.sign(payload);
+    }
+   
+      
+      
+    }
+    throw new UnauthorizedException('Invalid credentials');
+  }
+
+  private async generateQRCode(otpauthUrl: string): Promise<string> {        
+    return new Promise((resolve, reject) => {            
+      qrcode.toFile('./qrcode.png', otpauthUrl, (err) => {                
+        if (err) {                    
+          console.error('Error generating QR code:', err);                    
+          reject(err);                
+        } else {                    
+          console.log('QR code image saved as qrcode.png');                    
+          resolve('./qrcode.png');                
+        }            
+      });        
+    });    
+  }
+
+  async generateTwoFactorSecret(admin: Admin) {
+
+    var secret = speakeasy.generateSecret({      
+      name: admin.username,    
+    });    
+    console.log(secret);    
+    const qrCodeDataURL = await new Promise<any>((resolve, reject) => {      
+      qrcode.toDataURL(secret.otpauth_url as any, (err, data) => {        
+        if (err) {          
+          reject(err);        
+        } else {          
+          resolve(data);        
+        }      
+      });    
+    });    
+    console.log(qrCodeDataURL);   
+    console.log('-----------------------new line 1') 
+    const base64Data = qrCodeDataURL.split(";base64,").pop(); 
+    console.log('-----------------------new line 2', admin.username)   
+    const filePath = `qrcode-${admin.username}.png`;   
+    console.log('-----------------------new line 3',filePath) 
+
+    fs.writeFileSync(filePath, base64Data, { encoding: "base64" }); 
+    console.log('-----------------------new line 4')   
+    console.log("PNG file generated:", filePath);
+    admin.secretKey = secret.ascii;
+    this.adminRepository.save(admin);
+  }
+
 }

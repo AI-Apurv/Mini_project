@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { JwtStrategy } from 'src/Middleware/jwt.strategy';
 import { Session } from './entity/session.entity';
 import { CartModule } from './cart/cart.module';
+import { AddressModule } from './address/address.module';
 
 
 
@@ -19,7 +20,7 @@ import { CartModule } from './cart/cart.module';
       secret: 'your_secret_key', // Replace with your actual secret key
       signOptions: { expiresIn: '1h' }, // Adjust token expiration as needed
     }),
-    CartModule
+    CartModule,AddressModule
 
   ],
   controllers: [UserController],

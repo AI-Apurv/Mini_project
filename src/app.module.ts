@@ -15,6 +15,7 @@ import { ProductModule } from './Module/product/product.module';
 import { CartModule } from './Module/users/cart/cart.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { OrdersModule } from './Module/orders/orders.module';
+import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { OrdersModule } from './Module/orders/orders.module';
     ProductModule,
     CartModule,
     OrdersModule,
+    RabbitMQModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -9,21 +9,15 @@ import { Seller } from '../seller/entity/seller.entity';
 import { MulterModule } from '@nestjs/platform-express';
 import * as multer from 'multer'
 import { ReviewsModule } from './reviews/review.module';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, Category,Seller]), // Include Category in forFeature
+    TypeOrmModule.forFeature([Product, Category,Seller]),
     MulterModule.register({
-      dest: './uploads', // Destination folder where uploaded files will be stored
-      storage: multer.diskStorage({
-        destination: function (req, file, cb) {
-          cb(null, './uploads'); // Destination folder for uploaded images
-        },
-        filename: function (req, file, cb) {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-          cb(null, file.fieldname + '-' + uniqueSuffix);
-        },
-    }),
-  }), ReviewsModule
+      dest: './uploads',
+      // Destination folder where uploaded files will be stored
+       }), ReviewsModule,
+      //  MulterModule.register(multerConfig);
   ],
   controllers: [ProductController],
   providers: [ProductService],

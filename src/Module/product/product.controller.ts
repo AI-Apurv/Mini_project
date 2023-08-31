@@ -7,7 +7,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductResponseMessages } from 'src/common/responses/product.response';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-
+import { UploadInterceptor } from 'src/interceptors/upload.interceptor';
 
 @ApiTags('Products')
 @Controller('products')
@@ -15,29 +15,70 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
 
-  @UseInterceptors(FileInterceptor('image'))
+
+
+  // @UseInterceptors(UploadInterceptor)
+  // @ApiOperation({summary:'Add products'})
+  // @UseGuards(JwtAuthGuard)
+  // @Post('add')
+  // async createProduct(
+  //                     // @UploadedFile() image: Express.Multer.File,
+  //                     @Body() createProductDto: CreateProductDto,
+  //                     @Request() req: any) {
+  //   const seller = req.user;
+  //   console.log(seller);
+  //   if(seller.role !== 'seller'){
+  //    throw new UnauthorizedException(ProductResponseMessages.UNAUTHORIZED_ACTION)
+  //    }
+  //   const sellerId = req.user.userId;
+  //   await this.productService.createProduct(createProductDto,sellerId);
+  //   return { message: ProductResponseMessages.PRODUCT_CREATED };
+  //   // console.log('image-------------', image);
+  //   // console.log('Hi inside the controller')
+  //   // const hardcodedProduct: CreateProductDto = {
+  //   //   name: 'Hardcoded Product',
+  //   //   quantity: 10,
+  //   //   price: 9999,
+  //   //   categoryId: 5,
+  //   //   image: image.buffer,
+  //   // };
+  //   // console.log('-------------------',hardcodedProduct)
+
+  //   // return this.productService.createProduct(hardcodedProduct);
+    
+  // }
+
+  //-----------------------------------trying for multer----------------------------------
+  
+  // @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(UploadInterceptor)
   @ApiOperation({summary:'Add products'})
   @UseGuards(JwtAuthGuard)
   @Post('add')
-  async createProduct(@Body() createProductDto: CreateProductDto,
-                      // @UploadedFile() Image: Express.Multer.File,
-                      @Request() req: any) {
-    const seller = req.user;
-    if(seller.role !== 'seller'){
-        throw new UnauthorizedException(ProductResponseMessages.UNAUTHORIZED_ACTION)
-    }
-    // if(seller.verify === false)
-    // {
-    //   throw new UnauthorizedException('You are not a verified seller')
-    // }
-    console.log(seller.verify,'------------------verify')
+  async createProduct(@UploadedFile() image: Express.Multer.File,@Body() createProductDto: CreateProductDto,@Request() req: any) {
+    console.log("Inside the controller --------------------")
+    console.log(image)
+    // console.log('image-------------', image);
+    // console.log('Hi inside the controller')
+    // const hardcodedProduct: CreateProductDto = {
+    //   name: 'Hardcoded Product',
+    //   quantity: 10,
+    //   price: 9999,
+    //   categoryId: 5,
+    //   image: image.buffer,
+    // };
+    // console.log('-------------------',hardcodedProduct)
+
+    // return this.productService.createProduct(hardcodedProduct);
     const sellerId = req.user.userId;
-    // if(Image){
-    //   createProductDto.Image = Image.filename;
-    // }
-    await this.productService.createProduct(createProductDto,sellerId);
-    return { message: ProductResponseMessages.PRODUCT_CREATED };
+    console.log('sellerId------------------',sellerId)
+    await this.productService.createProduct(createProductDto,sellerId , image);
+    console.log('inside the controller')
+    return {messsage: ProductResponseMessages.PRODUCT_CREATED}
+    
   }
+
+//------------------------------------------------------------------------
 
   @ApiOperation({summary:'Update the products'})
   @UseGuards(JwtAuthGuard)
@@ -50,6 +91,13 @@ export class ProductController {
       return updateProduct;
   }
 
+
+
+
+
+
+
+
   @ApiOperation({summary:'Get product category'})
   @Get()
   getProductCategories() {
@@ -60,12 +108,24 @@ export class ProductController {
     ];
     return categoriesWithCounts;
   }
+
+
+
+
+
+
+
   @ApiOperation({summary:'Get Product details'})
   @Get(':parentId')
   async getCategoryDetails(@Param('parentId') parentId: number) {
     const details = await this.productService.getCategoryDetailsByParentId(parentId);
     return details;
   }
+
+
+
+
+
 
   @ApiOperation({summary:'Get Product details'})
   @Get('product-details/:productId')
@@ -76,6 +136,10 @@ export class ProductController {
     const details = await this.productService.getProducts(productId,page,limit)
     return details;
   }
-
+  private async readFileAsync(buffer: Buffer): Promise<Buffer> {
+    return new Promise<Buffer>((resolve, reject) => {
+      resolve(buffer);
+    });
+  }
   
 }

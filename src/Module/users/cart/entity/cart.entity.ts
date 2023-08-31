@@ -11,10 +11,12 @@ export class Cart {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
+  // user:number;
 
   @ManyToOne(() => Product)
   @JoinColumn({ name: 'productId' })
   product: Product;
+  // product:number;
 
   @Column()
   quantity: number;

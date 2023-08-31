@@ -23,6 +23,7 @@ export class AdminController {
     @ApiOperation({summary:'Admin Login'})
     @Post('login')
     async login(@Body() loginDto: AdminLoginDto) {
+      console.log("inside the controller---------")
       const token = await this.adminService.login(loginDto);
       return { token };
     }
