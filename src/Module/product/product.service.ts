@@ -1,11 +1,12 @@
-// product.service.ts
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Product } from './entity/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { Category } from '../admin/productCategory/entity/category.entity';
 import { Seller } from '../seller/entity/seller.entity';
+import { Review } from './reviews/entity/review.entity';
+import { FilterProductDto } from './dto/filterproduct.dto';
 
 @Injectable()
 export class ProductService {
@@ -15,18 +16,36 @@ export class ProductService {
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
     @InjectRepository(Seller)
-    private sellerRepository: Repository<Category>
+    private sellerRepository: Repository<Category>,
+    @InjectRepository(Review)
+    private reviewRepository: Repository<Review>
   ) {}
 
   async getProductById(productId: number): Promise<Product | undefined> {
     return this.productRepository.findOne({where:{productid:productId}});
   }
 
+  async getAllProducts() {
+    const products = await this.productRepository.find();
+    return products;
+  }
 
+  // async calculateAverageRating(productId: number):Promise<number>{
+  //   const reviews = await this.reviewRepository.find({
+  //     where: {productId},
+  //     select: ['rating']
+  //   });
 
-//-------------------------trying multer------------------------
+  //   if(reviews.length === 0)
+  //   {
+  //     return 0 ;
+  //   }
+  //   const totalRating = reviews.reduce((acc,review)=> acc + review.rating,0);
+  //   const averageRating = totalRating/reviews.length;
+  //   return averageRating;
+  // }
 
-  async createProduct(createProductDto: CreateProductDto, sellerId:number , image:Express.Multer.File){
+  async createProduct(createProductDto: CreateProductDto, sellerId:number , imageBuffer:Buffer){
     console.log('inside service--------------------')
     const {name , quantity , price , categoryId} = createProductDto
     const product = new Product();
@@ -34,79 +53,12 @@ export class ProductService {
     product.quantity = quantity;
     product.price = price;
     product.category = {id: categoryId} as Category;
-
+    product.image = imageBuffer;
+    product.seller = {sellerid: sellerId} as Seller;
     console.log('before Image-----------', product)
-
-    const imageBuffer = image.buffer;
-    console.log('imageBuffer----------------', imageBuffer)
-    const base64Image = imageBuffer.toString('base64');
-    console.log('base64Image--------------', base64Image);
-    product.Image = base64Image;
-    console.log('product.image------------', product.Image);
     await this.productRepository.save(product);
-    // const p : CreateProductDto = {
-    //   product.name: '' 
-    // };
-    // console.log('inside service------',image)
-    // if(image)
-    // {
-    //   product.image = image.buffer;
-    // }
-
-    // console.log('product.image-------------------',product.image)
-
-    // console.log(product)
     
-    // return this.productRepository.save(image);
-    // const {name , quantity , price , image} = createProductDto;
-    // const { categoryId, ...productData } = createProductDto;
-    // const newProduct = this.productRepository.create({
-    //   ...productData,
-    //   category: { id: categoryId }, 
-      
-    // });
-    // console.log('createProductDto-----------------',createProductDto);
-    // const temp = new Product();
-    // temp.name = name;
-    // temp.image = image;
-    
-    // console.log('temp.image------------------',temp.image)
-    // newProduct.seller = sellerId;
-    // console.log(newProduct)
-    // await this.productRepository.save(newProduct);
   }
-
-
-///////////////-----------------multer end -----------------------------------------
-
-
-
-
-
-
-/////////////////////-------correct-------------------------------------
-  // async createProduct(createProductDto: CreateProductDto, sellerId) {
-  //   console.log('@@@@@@@@@@@@@@@@@@2')
-  //   const { categoryId, ...productData } = createProductDto;
-  //   // You can add validation for the categoryId here if needed
-
-  //   // Create a new Product entity with the provided data
-  //   const newProduct = this.productRepository.create({
-  //     ...productData,
-  //     category: { id: categoryId }, // Assign the Category entity using categoryId
-      
-  //   });
-  //   newProduct.seller = sellerId;
-  //   console.log(newProduct)
-  //   // Save the new product in the database
-  //   await this.productRepository.save(newProduct);
-  // }
-
-
-
-
-
-
 
   async updateProduct(productId: number , updateProductDto, sellerId)
   {
@@ -138,6 +90,10 @@ export class ProductService {
   
 
   async getCategoryDetailsByParentId(parentId: number) {
+    // if(parentId !== 1  || parentId !== 2 || parentId!==3)
+    // {
+    //   throw new NotFoundException('Invalid parent Id')
+    // }
     const details = await this.categoryRepository.find({
       where: { parentId },
     });
@@ -153,14 +109,17 @@ export class ProductService {
     });
 
     return {items, totalItems}
-    // console.log('inside service')
-    // const details = await this.productRepository.find({
-    //     where: { category: { id: productId } },
-    // })
-    // console.log(details);
-    // return details;
+    
   }
 
+  async filterProductsByPrice(filterProduct:FilterProductDto) {
+    const products = await this.productRepository.find({
+      where: {
+        price: Between(filterProduct.minPrice, filterProduct.maxPrice),
+      },
+    });
+    return products;
+  }
   
 
 }

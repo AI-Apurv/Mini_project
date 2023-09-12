@@ -9,7 +9,10 @@ import { Cart } from 'src/Module/users/cart/entity/cart.entity';
 import { Order } from 'src/Module/orders/entity/order.entity';
 import { Review } from 'src/Module/product/reviews/entity/review.entity';
 import { Address } from 'src/Module/users/address/entity/address.entity';
-
+import { Statement } from 'src/Module/orders/statements/entity/statement.entity';
+import { DeliveryBoy } from 'src/Module/delievery-boy/entity/del.entity';
+// import { MessageEntity } from 'src/Module/chat/entity/chat.entity';
+import { Message } from 'src/Module/chat/entity/chat.entity';
 const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'postgres',
   host: 'localhost',
@@ -18,7 +21,7 @@ const typeOrmConfig: TypeOrmModuleOptions = {
   password: '      ',
   database: 'Myntra',
   synchronize: true,
-  entities: [User,Admin,Session,Category,Seller,Product,Cart,Order,Review,Address],
+  entities: [User,Admin,Session,Category,Seller,Product,Cart,Order,Review,Address,Statement,DeliveryBoy,Message],
 };
 
 export default typeOrmConfig;

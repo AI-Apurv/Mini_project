@@ -1,6 +1,22 @@
 export const AdminResponseMessages = {
+    NOT_FOUND: 'Admin not found.',
+    AUTHORIZED_FAILED: 'You are not authorized to perform this action.',
     ADMIN_CREATED: 'Admin created successfully.',
     LOGIN_SUCCESS: 'Logged in successfully.',
     UPDATE_SUCCESS: 'Admin updated successfully.',
     VERIFY_SELLER_SUCCESS: 'Seller verified successfully.',
+    DELETE_SUCCESS: 'Admin deleted successfully',
+    FORGOT_PASSWORD_EMAIL_SENT: 'Password reset OTP sent to email',
+    PASSWORD_RESET_SUCCESS: 'Password reset successful. Please login again.',
+    PASSWORD_RESET_FAILED: 'Password reset failed',
+    LOGOUT_SUCCESS: 'Logged out successfully',
+    LOGOUT_FAILED: 'Failed to logout',
+    PASSWORD_UPDATED: 'Password updated successfully',
+    PASSWORD_FAILED: 'Password change failed',
+    SESSION_STATUS: 'Admin has logged out. Please log in again.',
+    INVALID_TOKEN: 'invalid token',
+    INVALID_CREDENTIALS: 'invalid credentials',
+    MAIL_ERROR: 'Error sending email',
+    INVALID_PASSWORD: 'invalid password',
+    DIFF_PASS: 'New password must be different from the old password'
 }

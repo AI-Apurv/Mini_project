@@ -1,4 +1,3 @@
-// cart.service.ts
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -16,13 +15,11 @@ export class CartService {
   ) {}
 
   async addToCart(userId: number, productId: number, quantity: number) {
-    console.log("inside add to cart service")
     const product = await this.productRepository.findOne({where:{productid:productId}})
     console.log(product)
     if(!product){
         throw new NotFoundException('Product not found');
     }
-    console.log(product)
 
     if(product.quantity<quantity)
     {
@@ -34,6 +31,7 @@ export class CartService {
             user: {id:userId},
             product: {productid: productId}
         },
+        // relations: ['products'] // new change
     });
 
 
@@ -45,9 +43,10 @@ export class CartService {
             user: {id: userId},
             product: {productid:productId},
             quantity,
-        })
+        })       
+      //----------------------------------------------//
+      // cartItem.product.push({})
     }
-    console.log(cartItem)
     const totalPrice = product.price * cartItem.quantity;
     cartItem.price = totalPrice;
     await this.cartRepository.save(cartItem);
@@ -57,7 +56,7 @@ export class CartService {
   async getCartDetailsForUser(userId: number): Promise<Cart[]> {
     const cartItems = await this.cartRepository.find({
       where: { user: { id: userId } },
-      relations: ['product'], // Include the product relation
+      relations: ['product'], 
     });
   
     return cartItems;

@@ -1,4 +1,3 @@
-// admin.entity.ts
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('admin')
@@ -24,7 +23,7 @@ export class Admin {
   @Column({default: 'admin'})
   role: string;
 
-  @Column({ default: false }) // Default value is false (two-factor authentication is not enabled)
+  @Column({ default: false })
   isTwoFactorEnabled: boolean;
 
   @Column({nullable: true})

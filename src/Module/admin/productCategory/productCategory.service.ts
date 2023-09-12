@@ -1,10 +1,10 @@
-// category.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from './entity/category.entity';
 import { CategoryCreateDto } from './dto/category-create.dto';
-
+import { CategoryUpdateDto } from './dto/category-update.dto';
+import { categoryResponseMessage } from 'src/common/responses/category.response';
 @Injectable()
 export class CategoryService {
   constructor(
@@ -15,29 +15,59 @@ export class CategoryService {
   async addCategory(createDto: CategoryCreateDto, userRole: string) {
     if(userRole!== 'admin')
     {
-        throw new NotFoundException('You are not authorized to perform this action.');
+        throw new NotFoundException(categoryResponseMessage.AUTHORISE_FAILED);
     }
-
-    
     const { parentId,categoryName } = createDto;
+    const categoryExist = await this.categoryRepository.findOne({where:{id:parentId}})
+    console.log(categoryExist)
+    if(categoryExist)
+    {
+      throw new NotFoundException(categoryResponseMessage.NOT_EXIST)
+    }
     const newCategory = this.categoryRepository.create({
       parentId,
       categoryName,
     });
-    console.log(newCategory)
     await this.categoryRepository.save(newCategory);
   }
 
   async deleteCategory(id: number, userRole: string) {
     if (userRole !== 'admin') {
-      throw new NotFoundException('You are not authorized to perform this action.');
+      throw new NotFoundException(categoryResponseMessage.AUTHORISE_FAILED);
     }
 
     const category = await this.categoryRepository.findOne({where:{id}});
     if (!category) {
-      throw new NotFoundException('Category not found.');
+      throw new NotFoundException(categoryResponseMessage.NOT_FOUND);
     }
 
     await this.categoryRepository.remove(category);
+  }
+
+  async updateCategory(id: number, updateDto: CategoryUpdateDto, userRole: string) {
+    if (userRole !== 'admin') {
+      throw new UnauthorizedException(categoryResponseMessage.AUTHORISE_FAILED);
+    }
+  
+    const { parentId, categoryName } = updateDto;
+  
+    const category = await this.categoryRepository.findOne({where:{id}});
+    if (!category) {
+      throw new NotFoundException(categoryResponseMessage.NOT_FOUND);
+    }
+  
+    if (parentId !== undefined) {
+      category.parentId = parentId;
+    }
+    if (categoryName !== undefined) {
+      category.categoryName = categoryName;
+    }
+  
+    await this.categoryRepository.save(category);
+  }
+
+  async getAllCategories() {
+    const categories = await this.categoryRepository.find();
+    return categories;
   }
 }

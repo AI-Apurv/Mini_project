@@ -9,18 +9,21 @@ import { Seller } from '../seller/entity/seller.entity';
 import { MulterModule } from '@nestjs/platform-express';
 import * as multer from 'multer'
 import { ReviewsModule } from './reviews/review.module';
+import { UploadInterceptor } from 'src/interceptors/upload.interceptor';
+import { SellerModule } from '../seller/seller.module';
+import { Review } from './reviews/entity/review.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, Category,Seller]),
+    TypeOrmModule.forFeature([Product, Category,Seller,Review]),
     MulterModule.register({
       dest: './uploads',
       // Destination folder where uploaded files will be stored
-       }), ReviewsModule,
+       }), ReviewsModule,SellerModule
       //  MulterModule.register(multerConfig);
   ],
   controllers: [ProductController],
-  providers: [ProductService],
+  providers: [ProductService,UploadInterceptor],
   exports: [ProductService]
  
 })

@@ -4,6 +4,8 @@ import { Review } from "./entity/review.entity";
 import { Order } from "src/Module/orders/entity/order.entity";
 import { Repository } from "typeorm";
 import { CreateReviewDto } from "./dto/create-review.dto";
+import { Product } from "../entity/product.entity";
+import { ProductService } from "../product.service";
 
 @Injectable()
 export class ReviewService {
@@ -11,18 +13,30 @@ export class ReviewService {
         @InjectRepository(Review)
         private readonly reviewRepository: Repository<Review>,
         @InjectRepository(Order)
-        private readonly orderRepository: Repository<Order>
+        private readonly orderRepository: Repository<Order>,
+        @InjectRepository(Product)
+        private readonly productRepository: Repository<Product>,
+        
+        // private readonly productService: ProductService
     ) {}
 
+    async hasUserOrderedProduct(userId:number , productd: number): Promise<boolean>{
+        const order = await this.orderRepository.findOne({
+            where: {userId: userId , productId: productd}
+        });
+        return !!order;
+    }
+
     async leaveReview(userId: number, productId: number, rating: number, comment: string) {
-        const order = await this.orderRepository.findOne({ where: { userId, productId } });
-
-       
-        if (!order) {
-            throw new NotFoundException('product not found');
+        const hasOrdered = await this.hasUserOrderedProduct(userId,productId)
+        if(!hasOrdered)
+        {
+            throw new NotFoundException('You can only leave a review for products you have ordered')
         }
-
-
+        const reviewExist = await this.reviewRepository.findOne({where:{userId:userId,productId:productId}})
+        if(reviewExist){
+            return {message: 'you have already reviewed the product '}
+        }
         const review = new Review();
         review.userId = userId;
         review.productId = productId;
@@ -30,7 +44,12 @@ export class ReviewService {
         review.comment = comment;
 
         await this.reviewRepository.save(review);
-
+        
+        // const averageRating = await this.productService.calculateAverageRating(productId);
+        // const product = await this.productRepository.findOne({where:{productid:productId}})
+        // product.Rating = averageRating;
+        // await this.productRepository.save(product)
+        
         return { message: 'Review submitted successfully.' };
     }
 
@@ -44,6 +63,7 @@ export class ReviewService {
         review.rating = updateReviewDto.rating;
         review.comment = updateReviewDto.comment;
         await this.reviewRepository.save(review);
+        // await this.updateProductAverageRating(productId)
 
         return { message: 'Review updated successfully.'};
 
@@ -55,7 +75,49 @@ export class ReviewService {
         return reviews;
     }
 
-
- 
+    async getReviewsByUser(userId: number) {
+        console.log('---------',userId)
+        const reviews = await this.reviewRepository.find({
+          where: { userId }
+        });
+    
+        if (!reviews || reviews.length === 0) {
+          throw new NotFoundException('No reviews found for the user.');
+        }
+    
+        return reviews;
    
+}
+async deleteReview(userId: number, reviewId: number) {
+    const review = await this.reviewRepository.findOne({
+      where: { id: reviewId, userId }, // Ensure that the review belongs to the user
+    });
+
+    if (!review) {
+      return null; // Return null if the review is not found
+    }
+
+    await this.reviewRepository.remove(review);
+    return review;
+  }
+
+//   async updateProductAverageRating(productId: number): Promise<void> {
+//     const product = await this.productRepository.findOne({
+//       where: { productid: productId }, // Use the correct column name for your primary key
+//       relations: ['reviews'],
+//     });
+  
+//     if (!product) {
+//       throw new NotFoundException('Product not found');
+//     }
+  
+//     const totalRatings = product.reviews.reduce((sum, review) => sum + review.rating, 0);
+//     const averageRating = totalRatings / product.reviews.length;
+  
+//     product.Rating = averageRating;
+  
+//     await this.productRepository.save(product);
+//   }
+  
+
 }

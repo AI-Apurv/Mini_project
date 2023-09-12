@@ -12,7 +12,6 @@ export class MyService {
   async startConsuming() {
     this.rabbitMQService.receiveMessage((message) => {
       console.log('Received:', message);
-      // Process the message here
     });
   }
 

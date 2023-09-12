@@ -1,16 +1,21 @@
-import { Injectable, InternalServerErrorException, NotFoundException, UseGuards, Request, ConflictException, Inject} from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException,ConflictException, BadRequestException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entity/user.entity';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from './dto/user-signup.dto';
 import { UpadteUserDto } from './dto/update-user.dto';
+import { UserChangePasswordDto } from './dto/change-password.dto';
 import * as nodemailer from 'nodemailer';
 import { redis } from 'src/providers/database/redis.connection';
 import { Session } from './entity/session.entity';
 import { join } from 'path';
 import { readFileSync } from 'fs';
+import * as dotenv from 'dotenv'
+import { createClient } from 'redis';
+
+
+const client = createClient()
 
 @Injectable()
 export class UserService {
@@ -19,43 +24,39 @@ export class UserService {
     private userRepository: Repository<User>,
     @InjectRepository(Session)
     private sessionRepository: Repository<Session>,
-    private jwtService: JwtService,
     
-  ) {}
-  
+  ) { dotenv.config()}
+ 
   async signup(signupDto: SignupDto): Promise<void> {
     const { username, firstName, lastName, email, password, contactNumber } = signupDto;
     
-  const existingUser = await this.userRepository.findOne({ where: { email } });
-  if (existingUser) {
+    const existingUser = await this.userRepository.findOne({ where: { email } });
+    if (existingUser) {
     throw new ConflictException('User with this email already exists');
-  }
+   }
 
   const newUser = this.userRepository.create({
     username,
     firstName,
     lastName,
     email,
-    password, // Don't hash the password here
+    password,
     contactNumber,
   });
-
-  newUser.hashPassword(); // Hash the password before saving
-
+  newUser.hashPassword(); 
   await this.userRepository.save(newUser);
   
   }
 
+
   async validateUser(email: string, password: string): Promise<User | null> {
-    const user = await this.userRepository.findOne({ where: { email } });
-    
+    const user = await this.userRepository.findOne({ where: { email } }); 
     if (user && (await bcrypt.compare(password, user.password))) {
       return user;
     }
-    
-   
     return null;
   }
+
 
   async updateUserDetails(email: string , updateUserDto: UpadteUserDto): Promise<void>{
     const user = await this.userRepository.findOne({where: {email}});
@@ -69,6 +70,7 @@ export class UserService {
     await this.userRepository.save(user);
    }
   
+
    async deleteUser(email:string): Promise<void>{
     const user = await this.userRepository.findOne({where: {email}});
     if(!user){
@@ -76,6 +78,36 @@ export class UserService {
     }
     await this.userRepository.remove(user);
   }
+
+  async changePassword(userId: number,userchangePasswordDto: UserChangePasswordDto): Promise<void> {
+    const user = await this.userRepository.findOne({where:{id:userId}});
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const isPasswordValid = await this.validateOldPassword(user, userchangePasswordDto.oldPassword);
+
+    if(!isPasswordValid){
+      throw new BadRequestException('Invalid old password')
+    }
+
+    if (userchangePasswordDto.oldPassword === userchangePasswordDto.newPassword){
+      throw new BadRequestException('New password must be different from the old password')
+    }
+    
+    
+    user.password = await this.hashPassword(userchangePasswordDto.newPassword);
+
+    await this.userRepository.save(user);
+  }
+
+  private async validateOldPassword(user:User , oldPassword:string): Promise<boolean>{
+    return await bcrypt.compare(oldPassword,user.password)
+  }
+
+  private async hashPassword(password:string): Promise<string>{
+    return await bcrypt.hash(password,10);
+  }
+
 
 
   async sendPasswordResetEmail(email: string): Promise<void> {
@@ -86,7 +118,7 @@ export class UserService {
     }
   
     const OTP = Math.floor(1000 + Math.random() * 9000);
-    await redis.set(email,OTP.toString())
+    await redis.set(email,OTP.toString(),'EX',60)
 
     
     const transporter = nodemailer.createTransport({
@@ -95,15 +127,13 @@ export class UserService {
       port: 465,
       secure: true,
       auth: {
-        user: 'apurv1@appinventiv.com',
-        pass: 'atldfmccuufdvqzm' ,
+        user: process.env.EMAIL,
+        pass: process.env.PASSWORD ,
       },
     });
 
     const templatePath =  join('/home/admin2/Desktop/dem/my-nest-app/src/email-template')
-    const htmlTemplate =   readFileSync(`${templatePath}/password-reset.html`, 'utf-8');
-    const textTemplate =  readFileSync(`${templatePath}/password-reset.txt`, 'utf-8');
-  
+    const htmlTemplate =   readFileSync(`${templatePath}/password-reset.html`, 'utf-8');  
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
@@ -121,20 +151,21 @@ export class UserService {
     })
   }
 
+  
+  
   async resetPassword(email: string, otp: string , newPassword: string): Promise<string> {
-  
-  
     let redisOTP = await redis.get(email)
     console.log(redisOTP)
     if (redisOTP==otp) {
       console.log("enter resetpassword verify")
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       const user = await this.userRepository.findOne({where: {email}});
+      if(user)
+      await redis.del(email)
       
       if (user) {
         user.password = hashedPassword;
         await this.userRepository.save(user);
-        // await client.DEL(email);
         return 'Password reset successful. Please login again.';
       }
     } else {
@@ -143,6 +174,7 @@ export class UserService {
     }
   }
 
+
   async getActiveSession(userId: number): Promise<Session | undefined> {
     console.log("Inside get active session")
     return this.sessionRepository.findOne({
@@ -150,9 +182,14 @@ export class UserService {
     });
   }
 
+  
   async updateSession(session: Session, isActive: boolean):Promise<void>{
     session.isActive = isActive;
     await this.sessionRepository.save(session);
   }
 
 }
+
+
+
+

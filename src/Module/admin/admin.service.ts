@@ -1,18 +1,23 @@
-//git fetch vs git fetch --all
-import { Injectable, NotFoundException, UnauthorizedException, forwardRef } from "@nestjs/common";
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Admin } from "./entity/admin.entity";
-import { ConfigService } from "@nestjs/config";
 import * as bcrypt from 'bcrypt';
 import { JwtService } from "@nestjs/jwt";
 import { AdminLoginDto } from "./dto/admin-login.dto";
 import { AdminUpdateDto } from "./dto/admin-update.dto";
+import { AdminChangePasswordDto } from "./dto/change-password.dto";
 import { Seller } from "../seller/entity/seller.entity";
 import * as speakeasy from 'speakeasy';
 import * as qrcode from 'qrcode'
 import * as fs from 'fs';
-
+import * as dotenv from 'dotenv'
+import { redis } from "src/providers/database/redis.connection";
+import * as nodemailer from 'nodemailer';
+import { join } from "path";
+import { readFileSync } from "fs";
+import { AdminResponseMessages } from "src/common/responses/admin.response";
+import { sellerResponseMessage } from "src/common/responses/seller.response";
 @Injectable()
 export class AdminService {
   constructor(
@@ -20,36 +25,35 @@ export class AdminService {
     private adminRepository: Repository<Admin>,
     @InjectRepository(Seller)
     private sellerRepository: Repository<Seller>,
-    private configService: ConfigService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) {dotenv.config()}
 
   async initAdmin() {
     
-    const existingAdmin = await this.adminRepository.findOne({ where: { username: 'as' } });
+    const existingAdmin = await this.adminRepository.findOne({ where: { username: process.env.ADMIN_USERNAME } });
     if (!existingAdmin) {
       const newAdmin = this.adminRepository.create({
-        username: 'as',
-        firstName: 'a',
-        lastName: 's',
-        email: 'as@gmail.com',
-        password: await bcrypt.hash('Admin@123456', 10),
+        username: process.env.ADMIN_USERNAME,
+        firstName: process.env.FIRSTNAME,
+        lastName: process.env.LASTNAME,
+        email: process.env.ADMIN_EMAIL,
+        password: await bcrypt.hash(process.env.ADMIN_PASS, 10),
       });
       
-
+      this.generateTwoFactorSecret(newAdmin)
       await this.adminRepository.save(newAdmin);
-      console.log('Admin initialized.');
+     
     } else {
-      console.log('Admin already exists.');
+      // console.log('Admin already exists.');
     }
   }
 
   async createAdmin() {
-    const adminUsername = 'as';
-    const adminFirstName = 'a';
-    const adminLastName = 'a';
-    const adminEmail = 'as@gamil.com';
-    const adminPassword = 'Admin@123456';
+    const adminUsername = process.env.ADMIN_USERNAME;
+    const adminFirstName = process.env.FIRSTNAME;
+    const adminLastName = process.env.LASTNAME;
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASS;
       
     const admin = new Admin();
     admin.username = adminUsername;
@@ -62,22 +66,14 @@ export class AdminService {
     await this.adminRepository.save(admin);
   }
 
- 
-
-  async updateAdmin(updateDto: AdminUpdateDto, userId: number, userRole: string) {
-    const admin = await this.adminRepository.findOne({where:{adminid:userId}});
-    // console.log(userId, userRole)
-    // console.log(admin)
+  async updateAdmin(updateDto: AdminUpdateDto, adminId: number, userRole: string) {
+    const admin = await this.adminRepository.findOne({where:{adminid:adminId}});
     if (!admin) {
-      throw new NotFoundException('Admin not found.');
+      throw new NotFoundException(AdminResponseMessages.NOT_FOUND);
     }
-
-    // Check if the authenticated user has the 'admin' role
     if (userRole !== 'admin') {
-      throw new UnauthorizedException('You are not authorized to perform this action.');
+      throw new UnauthorizedException(AdminResponseMessages.AUTHORIZED_FAILED);
     }
-
-    // Update the admin details
     admin.firstName = updateDto.firstName;
     admin.lastName = updateDto.lastName;
     admin.email = updateDto.email;
@@ -88,12 +84,12 @@ export class AdminService {
   async verifySeller(sellerid: number, userRole: string ) {
     console.log(userRole)
     if (userRole !== 'admin') {
-      throw new UnauthorizedException('You are not authorized to perform this action.');
+      throw new UnauthorizedException(AdminResponseMessages.AUTHORIZED_FAILED);
     }
 
     const seller = await this.sellerRepository.findOne({where:{sellerid}});
     if (!seller) {
-      throw new NotFoundException('Seller not found.');
+      throw new NotFoundException(sellerResponseMessage.NOT_FOUND);
     }
 
 
@@ -102,12 +98,10 @@ export class AdminService {
   }
 
   async login(loginDto: AdminLoginDto): Promise<string> {
-    console.log('inside the service-------')
     const { email, password,otp} = loginDto;
     const admin = await this.adminRepository.findOne({where:{email}});
-    console.log('admin---------------',admin)
     if (!admin) {
-      throw new NotFoundException('Admin not found.');
+      throw new NotFoundException(AdminResponseMessages.NOT_FOUND);
     }
 
     
@@ -121,7 +115,7 @@ export class AdminService {
     console.log(verified);
     if(!verified)
     {
-      throw new UnauthorizedException('Invalid token')
+      throw new UnauthorizedException(AdminResponseMessages.INVALID_TOKEN)
     }
     else {
       const payload = { role:admin.role,username: admin.username, sub: admin.adminid };
@@ -131,21 +125,7 @@ export class AdminService {
       
       
     }
-    throw new UnauthorizedException('Invalid credentials');
-  }
-
-  private async generateQRCode(otpauthUrl: string): Promise<string> {        
-    return new Promise((resolve, reject) => {            
-      qrcode.toFile('./qrcode.png', otpauthUrl, (err) => {                
-        if (err) {                    
-          console.error('Error generating QR code:', err);                    
-          reject(err);                
-        } else {                    
-          console.log('QR code image saved as qrcode.png');                    
-          resolve('./qrcode.png');                
-        }            
-      });        
-    });    
+    throw new UnauthorizedException(AdminResponseMessages.INVALID_CREDENTIALS);
   }
 
   async generateTwoFactorSecret(admin: Admin) {
@@ -153,7 +133,7 @@ export class AdminService {
     var secret = speakeasy.generateSecret({      
       name: admin.username,    
     });    
-    console.log(secret);    
+      
     const qrCodeDataURL = await new Promise<any>((resolve, reject) => {      
       qrcode.toDataURL(secret.otpauth_url as any, (err, data) => {        
         if (err) {          
@@ -162,19 +142,117 @@ export class AdminService {
           resolve(data);        
         }      
       });    
-    });    
-    console.log(qrCodeDataURL);   
-    console.log('-----------------------new line 1') 
+    });     
     const base64Data = qrCodeDataURL.split(";base64,").pop(); 
-    console.log('-----------------------new line 2', admin.username)   
     const filePath = `qrcode-${admin.username}.png`;   
-    console.log('-----------------------new line 3',filePath) 
 
     fs.writeFileSync(filePath, base64Data, { encoding: "base64" }); 
-    console.log('-----------------------new line 4')   
-    console.log("PNG file generated:", filePath);
     admin.secretKey = secret.ascii;
     this.adminRepository.save(admin);
   }
+
+  async deleteUser(email:string): Promise<void>{
+    const admin = await this.adminRepository.findOne({where: {email}});
+    if(!admin){
+      throw new NotFoundException(AdminResponseMessages.NOT_FOUND)
+    }
+    await this.adminRepository.remove(admin);
+  }
+
+
+
+  async sendPasswordResetEmail(email: string): Promise<void> {
+    const admin = await this.adminRepository.findOne({where: {email}});
+  
+    if (!admin) {
+      throw new NotFoundException(AdminResponseMessages.NOT_FOUND);
+    }
+  
+    const OTP = Math.floor(1000 + Math.random() * 9000);
+    await redis.set(email,OTP.toString(),'EX',60)
+
+    
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.PASSWORD ,
+      },
+    });
+
+    const templatePath =  join('/home/admin2/Desktop/dem/my-nest-app/src/email-template')
+    const htmlTemplate =   readFileSync(`${templatePath}/password-reset.html`, 'utf-8');  
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: 'Password Reset Request',
+      html: htmlTemplate.replace('{{ OTP }}',OTP.toString())
+    };
+  
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log(error);
+        throw new InternalServerErrorException(AdminResponseMessages.MAIL_ERROR);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    })
+  }
+
+  
+  
+  async resetPassword(email: string, otp: string , newPassword: string): Promise<string> {
+    let redisOTP = await redis.get(email)
+    console.log(redisOTP)
+    if (redisOTP==otp) {
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      const admin = await this.adminRepository.findOne({where: {email}});
+      if(admin)
+      await redis.del(email)
+      
+      if (admin) {
+        admin.password = hashedPassword;
+        await this.adminRepository.save(admin);
+        return AdminResponseMessages.PASSWORD_RESET_SUCCESS;
+      }
+    } else {
+      console.log()
+      throw new Error('Invalid OTP');
+    }
+  }
+
+  async changePassword(adminId: number,adminchangePasswordDto: AdminChangePasswordDto): Promise<void> {
+    const admin = await this.adminRepository.findOne({where:{adminid:adminId}});
+    if (!admin) {
+      throw new Error(AdminResponseMessages.NOT_FOUND);
+    }
+    const isPasswordValid = await this.validateOldPassword(admin, adminchangePasswordDto.oldPassword);
+
+    if(!isPasswordValid){
+      throw new BadRequestException(AdminResponseMessages.INVALID_PASSWORD)
+    }
+
+    if (adminchangePasswordDto.oldPassword === adminchangePasswordDto.newPassword){
+      throw new BadRequestException(AdminResponseMessages.DIFF_PASS)
+    }
+    
+    
+    admin.password = await this.hashPassword(adminchangePasswordDto.newPassword);
+
+    await this.adminRepository.save(admin);
+  }
+
+  private async validateOldPassword(admin:Admin , oldPassword:string): Promise<boolean>{
+    return await bcrypt.compare(oldPassword,admin.password)
+  }
+
+  private async hashPassword(password:string): Promise<string>{
+    return await bcrypt.hash(password,10);
+  }
+
+
 
 }

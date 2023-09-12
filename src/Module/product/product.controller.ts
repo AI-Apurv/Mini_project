@@ -1,103 +1,60 @@
-// product.controller.ts
-import { Controller, Post, Body, UseGuards, Get, Param, Request, UnauthorizedException, Patch, Query, ParseIntPipe, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Request, UnauthorizedException, Patch, Query, ParseIntPipe, UseInterceptors, UploadedFile, HttpStatus } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { JwtAuthGuard } from 'src/Middleware/jwt.auth.guard';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductResponseMessages } from 'src/common/responses/product.response';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { UploadInterceptor } from 'src/interceptors/upload.interceptor';
-
+import { SellerService } from '../seller/seller.service';
+import { FilterProductDto } from './dto/filterproduct.dto';
 @ApiTags('Products')
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(private readonly productService: ProductService,
+              private readonly sellerService: SellerService) {}
 
+ @ApiOperation({ summary: 'Get all products' })
+ @Get('all')
+ async getAllProducts() {
+ const products = await this.productService.getAllProducts();
+ return { products };
+  }
 
-
-
-  // @UseInterceptors(UploadInterceptor)
-  // @ApiOperation({summary:'Add products'})
-  // @UseGuards(JwtAuthGuard)
-  // @Post('add')
-  // async createProduct(
-  //                     // @UploadedFile() image: Express.Multer.File,
-  //                     @Body() createProductDto: CreateProductDto,
-  //                     @Request() req: any) {
-  //   const seller = req.user;
-  //   console.log(seller);
-  //   if(seller.role !== 'seller'){
-  //    throw new UnauthorizedException(ProductResponseMessages.UNAUTHORIZED_ACTION)
-  //    }
-  //   const sellerId = req.user.userId;
-  //   await this.productService.createProduct(createProductDto,sellerId);
-  //   return { message: ProductResponseMessages.PRODUCT_CREATED };
-  //   // console.log('image-------------', image);
-  //   // console.log('Hi inside the controller')
-  //   // const hardcodedProduct: CreateProductDto = {
-  //   //   name: 'Hardcoded Product',
-  //   //   quantity: 10,
-  //   //   price: 9999,
-  //   //   categoryId: 5,
-  //   //   image: image.buffer,
-  //   // };
-  //   // console.log('-------------------',hardcodedProduct)
-
-  //   // return this.productService.createProduct(hardcodedProduct);
-    
-  // }
-
-  //-----------------------------------trying for multer----------------------------------
-  
-  // @UseInterceptors(FileInterceptor('image'))
+  @ApiBearerAuth()
   @UseInterceptors(UploadInterceptor)
   @ApiOperation({summary:'Add products'})
   @UseGuards(JwtAuthGuard)
   @Post('add')
-  async createProduct(@UploadedFile() image: Express.Multer.File,@Body() createProductDto: CreateProductDto,@Request() req: any) {
-    console.log("Inside the controller --------------------")
-    console.log(image)
-    // console.log('image-------------', image);
-    // console.log('Hi inside the controller')
-    // const hardcodedProduct: CreateProductDto = {
-    //   name: 'Hardcoded Product',
-    //   quantity: 10,
-    //   price: 9999,
-    //   categoryId: 5,
-    //   image: image.buffer,
-    // };
-    // console.log('-------------------',hardcodedProduct)
-
-    // return this.productService.createProduct(hardcodedProduct);
+  async createProduct(@Body() createProductDto: CreateProductDto,@Request() req: any) {
+    const seller = await this.sellerService.getSellerById(req.user.userId)
+    if (!seller || !seller.verify) {
+      return {
+        statusCode: HttpStatus.UNAUTHORIZED,
+        message: 'Only verified sellers are allowed to add products',
+      };
+    }  
+    const image: Express.Multer.File = req.file;
+    const imageBuffer: Buffer = image.buffer;
     const sellerId = req.user.userId;
     console.log('sellerId------------------',sellerId)
-    await this.productService.createProduct(createProductDto,sellerId , image);
+    await this.productService.createProduct(createProductDto,sellerId , imageBuffer);
     console.log('inside the controller')
     return {messsage: ProductResponseMessages.PRODUCT_CREATED}
     
   }
 
-//------------------------------------------------------------------------
-
+  @ApiBearerAuth()
   @ApiOperation({summary:'Update the products'})
   @UseGuards(JwtAuthGuard)
   @Patch('update/:productId')
   async updateProduct(@Param('productId') productId:number,
-                      @Body() updateProductDto:UpdateProductDto,
-                      @Request() req)
+  @Body() updateProductDto:UpdateProductDto,@Request() req)
   {
       const updateProduct = await this.productService.updateProduct(productId, updateProductDto, req.user.userId);
       return updateProduct;
   }
-
-
-
-
-
-
-
-
+  
   @ApiOperation({summary:'Get product category'})
   @Get()
   getProductCategories() {
@@ -110,11 +67,6 @@ export class ProductController {
   }
 
 
-
-
-
-
-
   @ApiOperation({summary:'Get Product details'})
   @Get(':parentId')
   async getCategoryDetails(@Param('parentId') parentId: number) {
@@ -123,23 +75,21 @@ export class ProductController {
   }
 
 
-
-
-
-
   @ApiOperation({summary:'Get Product details'})
   @Get('product-details/:productId')
-  async getProductDetails(@Param('productId') productId: number,
-                          @Query('page',ParseIntPipe) page: number = 1,
-                          @Query('limit',ParseIntPipe) limit: number= 10){
+  async getProductDetails(@Param('productId') productId: number, @Query('page',ParseIntPipe) page: number = 1, @Query('limit',ParseIntPipe) limit: number= 10){
     console.log('inside controller',productId)
     const details = await this.productService.getProducts(productId,page,limit)
     return details;
   }
-  private async readFileAsync(buffer: Buffer): Promise<Buffer> {
-    return new Promise<Buffer>((resolve, reject) => {
-      resolve(buffer);
-    });
+
+  
+  @ApiOperation({ summary: 'Get products by price range' })
+  @Post('filters')
+  async filterProductsByPrice(@Body() filterProduct: FilterProductDto) {
+    const products = await this.productService.filterProductsByPrice(filterProduct);
+    return { products };
   }
+ 
   
 }

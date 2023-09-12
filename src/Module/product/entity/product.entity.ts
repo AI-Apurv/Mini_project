@@ -23,11 +23,11 @@ export class Product {
   // @Column({ nullable: true })
   // image: string; 
 
-  // @Column('bytea', {nullable: true})
-  // image: Buffer 
+  @Column('bytea', {nullable: true})
+  image: Buffer 
 
-  @Column({nullable: true})
-  Image: string;
+  @Column({type:'float',default: 0})
+  Rating: number
   
   @ManyToOne(() => Category, { onDelete: 'SET NULL' }) // Define relationship with Category entity
   @JoinColumn({ name: 'categoryId' })
@@ -40,6 +40,8 @@ export class Product {
 
   @ManyToOne(() => Order, order=> order.products)// new change 
   order: Order
+
+  
 
 
 

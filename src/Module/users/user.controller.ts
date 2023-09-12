@@ -9,22 +9,20 @@ import { ForgotPasswordDto } from "./dto/forget-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { redis } from 'src/providers/database/redis.connection';
 import {createClient} from 'redis';
-import Redis from 'ioredis';
 import { userResponseMessages } from "src/common/responses/user.response";
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { UserChangePasswordDto } from "./dto/change-password.dto";
+
 
 const client = createClient()
-
 
 
 @ApiTags('Users')
 @Controller('user')
 export class UserController {
-    constructor(private readonly userService: UserService,
-                private readonly jwtService: JwtService,
-                ) {}
+    constructor(private readonly userService: UserService,private readonly jwtService: JwtService) {}
   
-
+    
     @ApiOperation({summary:'User Signup'})
     @Post('signup')
     async signup(@Body(new ValidationPipe({ transform: true })) signupDto: SignupDto): Promise<{ message: string }> {
@@ -32,6 +30,7 @@ export class UserController {
       return { message: userResponseMessages.SIGNUP_SUCCESS };
     }
   
+    @ApiBearerAuth()
     @ApiOperation({summary:'User Login'})
     @Post('login')
     async login(@Body(new ValidationPipe()) loginDto: LoginDto): Promise<{ accessToken: string }> {
@@ -48,6 +47,7 @@ export class UserController {
       return { accessToken };
     }
 
+    @ApiBearerAuth()
     @ApiOperation({summary:'Update user details'})
     @Patch('update-users')
     @UseGuards(JwtAuthGuard)
@@ -71,6 +71,7 @@ export class UserController {
       }
     }
   
+    @ApiBearerAuth()
     @ApiOperation({summary:'Delete user'})
     @Delete('delete-user')
     @UseGuards(JwtAuthGuard)
@@ -91,6 +92,24 @@ export class UserController {
       }
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({summary:'change user password'})
+    @UseGuards(JwtAuthGuard)
+    @Post('change-password')
+    async changePassword(@Request() req, @Body(new ValidationPipe()) userchangePasswordDto: UserChangePasswordDto) {
+    const userId = req.user.userId; 
+
+    try {
+      await this.userService.changePassword(userId, userchangePasswordDto);
+      return { message: 'Password updated successfully' };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error; 
+      } else {
+        throw new HttpException('Failed to update password', HttpStatus.INTERNAL_SERVER_ERROR);
+      }    }
+  }
+
     @ApiOperation({summary:'user forgot password'})
     @Post('forgot-password')
     async sendPasswordResetEmail(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
@@ -101,7 +120,7 @@ export class UserController {
     @ApiOperation({summary:'Password reset email'})
     @Post('reset-password')
     @HttpCode(200)
-    async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<any> {
+    async resetPassword(@Body(new ValidationPipe()) resetPasswordDto: ResetPasswordDto): Promise<any> {
       
       try {
        
@@ -122,6 +141,7 @@ export class UserController {
       }
     }
 
+    @ApiBearerAuth()
     @ApiOperation({summary:'User Logout'})
     @Post('logout')
     @UseGuards(JwtAuthGuard)
@@ -136,10 +156,5 @@ export class UserController {
 
  
     }
-
-    
-
-
-
   
   }

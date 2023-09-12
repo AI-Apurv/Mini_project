@@ -1,9 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { User } from '../../entity/user.entity';
+import { IsNotEmpty, IsNumber } from 'class-validator';
 
 @Entity('address')
 export class Address {
   @PrimaryGeneratedColumn()
-  id: number;
+  addressId: number;
 
   @Column()
   street: string;
@@ -16,4 +18,9 @@ export class Address {
 
   @Column()
   postalCode: string;
+
+  @ManyToOne(()=> User)
+  @JoinColumn({name: 'userId'})
+  user:number
+
 }

@@ -1,7 +1,7 @@
-// order.entity.ts
 import { Entity, PrimaryGeneratedColumn, ManyToOne, OneToMany, JoinColumn, Column, CreateDateColumn } from 'typeorm';
 import { User } from 'src/Module/users/entity/user.entity';
 import { Product } from 'src/Module/product/entity/product.entity';
+import { Seller } from 'src/Module/seller/entity/seller.entity';
 
 @Entity('Order')
 export class Order {
@@ -11,10 +11,24 @@ export class Order {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
+  
 
-  @OneToMany(() => Product, product => product.order)
+  // @OneToMany(() => Product, product => product.order)
+  // @JoinColumn({ name: 'productId' })
+  // products: Product;
+
+  @ManyToOne(() => Product,)
   @JoinColumn({ name: 'productId' })
   products: Product;
+
+  //---------------------new-----------------------
+  @ManyToOne(()=>Seller)
+  @JoinColumn({name: 'sellerId'})
+  seller: Seller
+
+  @Column({nullable: true})
+  sellerId: number
+  //-----------------------------------------------
 
   @Column({nullable: true})
   quantity: number;
@@ -35,11 +49,16 @@ export class Order {
   productId: number;
 
   @Column({default: true})
-  orderActive: true
+  orderActive: boolean
+
+  @Column()
+  addressId: number;
+
+  @Column({default: false})
+  orderDelivered: boolean
 
  
 
 
 
-  // Add more fields as needed, such as total price, order date, etc.
 }

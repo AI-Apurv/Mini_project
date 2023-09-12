@@ -16,6 +16,9 @@ import { CartModule } from './Module/users/cart/cart.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { OrdersModule } from './Module/orders/orders.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
+import { Statement } from './Module/orders/statements/entity/statement.entity';
+import { DeliveryBoyModule } from './Module/delievery-boy/del.module';
+import { ChatsModule } from './Module/chat/chat.module';
 
 @Module({
   imports: [
@@ -28,7 +31,10 @@ import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
     ProductModule,
     CartModule,
     OrdersModule,
-    RabbitMQModule
+    RabbitMQModule,
+    DeliveryBoyModule,
+    ChatsModule
+    
   ],
   controllers: [AppController],
   providers: [AppService],
