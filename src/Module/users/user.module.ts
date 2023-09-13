@@ -8,6 +8,7 @@ import { JwtStrategy } from 'src/Middleware/jwt.strategy';
 import { Session } from './entity/session.entity';
 import { CartModule } from './cart/cart.module';
 import { AddressModule } from './address/address.module';
+import { GoogleStrategy } from 'src/Middleware/google.strategy';
 
 
 
@@ -23,7 +24,7 @@ import { AddressModule } from './address/address.module';
 
   ],
   controllers: [UserController],
-  providers: [UserService,JwtStrategy,],
+  providers: [UserService,JwtStrategy,GoogleStrategy],
   exports: [UserService],
 })
 export class UsersModule {}

@@ -151,6 +151,67 @@ export class UserService {
     })
   }
 
+  async verifyUserEmail(email:string): Promise<void>{
+       const user = await this.userRepository.findOne({where: {email}});
+    
+      if (!user) {
+        throw new NotFoundException('Email not found');
+      }
+    
+      const OTP = Math.floor(1000 + Math.random() * 9000);
+      await redis.set(email,OTP.toString(),'EX',60)
+  
+      
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.EMAIL,
+          pass: process.env.PASSWORD ,
+        },
+      });
+    
+      const mailOptions = {
+        from: process.env.EMAIL,
+        to: email,
+        subject: 'Email Verification otp',
+        text: `otp to verify mail ${OTP}`
+      };
+    
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log(error);
+          throw new InternalServerErrorException('Error sending email');
+        } else {
+          console.log('Email sent: ' + info.response);
+        }
+      })
+    }
+
+    async emailVerificationOtp(email: string, otp: string ): Promise<{message:string}> {
+     console.log('inside the service',otp, email)
+      let redisOTP = await redis.get(email)
+      console.log(redisOTP)
+      const user = await this.userRepository.findOne({where:{email:email}})
+      if(!user)
+      {
+        return {message: 'Email does not exist'}
+      }
+      if (redisOTP==otp) {
+        user.isActive = true
+        this.userRepository.save(user);
+        return {message: 'email verified successfully'}
+        }
+      else{
+        return {message:"Invalid otp"}
+      }
+
+    }
+  
+  
+
   
   
   async resetPassword(email: string, otp: string , newPassword: string): Promise<string> {
@@ -186,6 +247,29 @@ export class UserService {
   async updateSession(session: Session, isActive: boolean):Promise<void>{
     session.isActive = isActive;
     await this.sessionRepository.save(session);
+  }
+
+  async googleLogin(req) {
+    if (!req.user) {
+      return 'No user from google'
+    }
+
+    const existingUser = await this.userRepository.findOne({where:{email:req.user.email}})
+    if(existingUser){
+     return 'User logged in successful,'
+    }
+    else{
+      const newUser = new User();
+      newUser.firstName = req.user.firstName;
+      newUser.lastName = req.user.lastName;
+      newUser.email = req.user.email;
+      console.log('@@@@@@@@@@@@@@@',newUser)
+      await this.userRepository.save(newUser)
+    }
+    return {
+      message: 'User information from google',
+      user: req.user
+    }
   }
 
 }

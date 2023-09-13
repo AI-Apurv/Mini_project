@@ -1,4 +1,4 @@
-import { Post, Body, ValidationPipe, HttpException, HttpStatus, Controller, Delete, Patch, UseGuards, Request, HttpCode } from "@nestjs/common";
+import { Post, Body, ValidationPipe, HttpException, HttpStatus, Controller, Delete, Patch, UseGuards, Request, HttpCode, Get, Req } from "@nestjs/common";
 import { SignupDto } from "./dto/user-signup.dto";
 import { LoginDto } from "./dto/user-login.dto";
 import { UserService } from "./user.service";
@@ -12,6 +12,8 @@ import {createClient} from 'redis';
 import { userResponseMessages } from "src/common/responses/user.response";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { UserChangePasswordDto } from "./dto/change-password.dto";
+import { verifyEmailOtp } from "./dto/verify-email-otp.dto";
+import { AuthGuard } from "@nestjs/passport";
 
 
 const client = createClient()
@@ -45,6 +47,29 @@ export class UserController {
       await client.connect();
       await client.set(user.id.toString(), 'true')
       return { accessToken };
+    }
+
+    @ApiBearerAuth()
+    @ApiOperation({summary:'verify user email'})
+    @UseGuards(JwtAuthGuard)
+    @Post('send/verify-email')
+    async verifyEmail(@Request() req){
+      console.log("inside the verify email")
+      const mail = req.user.email
+      console.log('email@@@@@@@@@@@@',mail)
+      await this.userService.verifyUserEmail(mail)
+    }
+
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({summary:'enter email verification otp'})
+    @Post('enter/email-verify-otp')
+    async enterOtp(@Request() req, @Body()verifyOtp:verifyEmailOtp){
+      const mail = req.user.email;
+      console.log(verifyOtp.otp,'@@@@@@@@@@@@@@@')
+      const otp = verifyOtp.otp;
+      console.log("inside the controller", mail , otp)
+      await this.userService.emailVerificationOtp(mail,otp)
     }
 
     @ApiBearerAuth()
@@ -156,5 +181,16 @@ export class UserController {
 
  
     }
+
+  @Get()
+  @UseGuards(AuthGuard('google'))
+  async googleAuth(@Req() req) {}
+
+  @Get('google/redirect')
+  @UseGuards(AuthGuard('google'))
+  googleAuthRedirect(@Req() req) {
+    return this.userService.googleLogin(req)
+  }
+
   
   }
