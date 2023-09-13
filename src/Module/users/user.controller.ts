@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagg
 import { UserChangePasswordDto } from "./dto/change-password.dto";
 import { verifyEmailOtp } from "./dto/verify-email-otp.dto";
 import { AuthGuard } from "@nestjs/passport";
+import { Throttle } from "@nestjs/throttler";
 
 
 const client = createClient()
@@ -134,7 +135,7 @@ export class UserController {
         throw new HttpException('Failed to update password', HttpStatus.INTERNAL_SERVER_ERROR);
       }    }
   }
-
+   
     @ApiOperation({summary:'user forgot password'})
     @Post('forgot-password')
     async sendPasswordResetEmail(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
