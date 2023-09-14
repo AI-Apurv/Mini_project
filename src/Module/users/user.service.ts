@@ -13,19 +13,21 @@ import { join } from 'path';
 import { readFileSync } from 'fs';
 import * as dotenv from 'dotenv'
 import { createClient } from 'redis';
-
+import * as twilio from 'twilio';
 
 const client = createClient()
 
 @Injectable()
 export class UserService {
+  private readonly tClient: twilio.Twilio;
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
     @InjectRepository(Session)
     private sessionRepository: Repository<Session>,
     
-  ) { dotenv.config()}
+  ) { dotenv.config(),
+      this.tClient = twilio('ACfc74e590c8daf735c27d6d0ca5368ed9','1b993ff1e231b36d01c078fbdf83326c')}
  
   async signup(signupDto: SignupDto): Promise<void> {
     const { username, firstName, lastName, email, password, contactNumber } = signupDto;
@@ -271,6 +273,40 @@ export class UserService {
       user: req.user
     }
   }
+
+  async sendVerificationCode(phoneNumber:string,userId:number):Promise<{message:string}>{
+    try{
+      const user = await this.userRepository.findOne({where:{id:userId}})
+      if(user.contactNumber!==phoneNumber)
+      {
+        return {message:'this contact number is invalid or it is not registered'}
+      }
+      const code = Math.floor(1000 + Math.random() * 9000);
+      // console.log(user.email)
+      // await redis.set(user.email,code.toString(),'EX',60)
+      // console.log(redis.get(user.email))
+       const message = await this.tClient.messages.create({
+        body: `Your verification code is : ${code}`,
+        to: `+91${phoneNumber}`,
+        from: '+12565300048'
+      });
+      return {message:`Verification code sent to ${phoneNumber}: ${message.sid} `}
+    }
+    catch(error){
+      console.log(`Error sending verification code ${error}`)
+      throw error;
+    }
+  }
+
+  // async matchVerificationCode(code:string,userId:number):Promise<{message:string}>{
+  //   const user = await this.userRepository.findOne({where:{id:userId}})
+  //   let redisCode = await redis.get(user.email)
+  //   if(redisCode===code)
+  //   {
+  //     return {message:'Contact number verified'}
+  //   }
+  //   return {message:'Invalid code'}
+  // }
 
 }
 

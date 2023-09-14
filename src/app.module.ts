@@ -20,6 +20,7 @@ import { Statement } from './Module/orders/statements/entity/statement.entity';
 import { DeliveryBoyModule } from './Module/delievery-boy/del.module';
 import { ChatsModule } from './Module/chat/chat.module';
 import { ChatbotModule } from './Module/bot/bot.module';
+import { EventModule } from './Module/Event/event.module';
 
 @Module({
   imports: [
@@ -35,7 +36,8 @@ import { ChatbotModule } from './Module/bot/bot.module';
     RabbitMQModule,
     DeliveryBoyModule,
     ChatsModule,
-    ChatbotModule
+    ChatbotModule,
+    EventModule
     
   ],
   controllers: [AppController],

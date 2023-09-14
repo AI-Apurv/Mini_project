@@ -75,5 +75,16 @@ export class OrderController {
       const canceledOrders = await this.orderService.getCanceledOrders(userId);
       return canceledOrders;
     }
+
+
+    @Get('success')
+    async success(){
+      return 'Payment successful. Thanks for purchasing';
+    }
+
+    @Get('cancel')
+    async cancel(){
+      return 'Payment cancelled !!';
+    }
     
 }

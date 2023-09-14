@@ -8,6 +8,9 @@ import { AddressService } from '../users/address/address.service';
 import { Address } from '../users/address/entity/address.entity';
 import { Statement } from './statements/entity/statement.entity';
 import { Seller } from '../seller/entity/seller.entity';
+import Stripe from 'stripe'
+
+const stripe = require ('stripe')('sk_test_51Npr7GSGOAo1m9gXjlZbeBpA3cxjvD9EDKgv1WkoXhED7EO83ZFgrmYVyhTAIzOBUKZdYXLMMbFJCHP55LMwNr5b00Se6zCj8K')
 
 @Injectable()
 export class OrderService {
@@ -74,8 +77,8 @@ export class OrderService {
           const sellerId = product.seller.sellerid
           if (product) {
             const statement = new Statement();
-            statement.order = order.id; // Use the auto-generated order ID
-            statement.creditId = sellerId; // Assuming you have a sellerId in your Product entity
+            statement.order = order.id; 
+            statement.creditId = sellerId; 
             statement.debitId = userId;
             statement.amount = order.totalPrice;
       
@@ -97,7 +100,6 @@ export class OrderService {
           }          
         await this.cartRepository.remove(cartItems);
         const totalOrderPrice = savedOrders.reduce((total, order) => total + order.totalPrice, 0);
-
         const ordersWithDetails = await Promise.all(
           savedOrders.map(async order => {
             const product = await this.productRepository.findOne({where:{productid:order.productId}})
@@ -107,7 +109,29 @@ export class OrderService {
             }
           })
         )
-        return {ordersWithDetails,totalOrderPrice};
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items:[
+            {
+              price_data: {
+                currency: 'inr',
+                product_data:{
+                  name: 'Total amount',
+                },
+                unit_amount: totalOrderPrice*100,
+
+              },
+              quantity:1 ,
+            }
+          ],
+          mode: 'payment',
+          success_url : 'http://localhost:3000/orders/success',
+          cancel_url: 'http://localhost:3000/orders/cancel'
+
+        });
+        const url =  session.url;
+
+        return {ordersWithDetails,totalOrderPrice,url};
       }
 
       async cancelOrder(orderId:number){
@@ -140,7 +164,6 @@ export class OrderService {
         pro.quantity += order.quantity;
         await this.productRepository.save(pro);
         await this.orderRepository.save(order)
-
         return { message: 'Order canceled successfully.' };
 
       }

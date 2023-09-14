@@ -14,8 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagg
 import { UserChangePasswordDto } from "./dto/change-password.dto";
 import { verifyEmailOtp } from "./dto/verify-email-otp.dto";
 import { AuthGuard } from "@nestjs/passport";
-import { Throttle } from "@nestjs/throttler";
-
+import { verifyContactDto } from "./dto/verify-Contact.dto";
 
 const client = createClient()
 
@@ -192,6 +191,31 @@ export class UserController {
   googleAuthRedirect(@Req() req) {
     return this.userService.googleLogin(req)
   }
+//------------------------------------------------trying twilio----------------------------------------------------------
+  @Post('send-code')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({summary:'send otp for verify contact number'})
+  async sendVerificationCode(@Body() verifyContact: verifyContactDto, @Request() req):Promise<{message:string}>{
+    try{
+      const userId = req.user.userId;
+      await this.userService.sendVerificationCode(verifyContact.contactNumber,userId)
+      return {message: 'Verification code sent successfully'}
+    }
+    catch(error){
+      return {message: 'Failed to send the verifcation code'}
+    }
+  }
+
+  // @Post('verify-code')
+  // @ApiBearerAuth()
+  // @UseGuards(JwtAuthGuard)
+  // @ApiOperation({summary:'verify the contact number'})
+  // async verifyContactNumber(@Body() otp:string, @Request() req:any){
+  //   const userId = req.user.userId;
+  //   await this.userService.matchVerificationCode(otp,userId)
+  // }
+
 
   
   }

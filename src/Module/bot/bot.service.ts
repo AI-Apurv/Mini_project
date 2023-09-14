@@ -32,7 +32,7 @@ export class NlpService {
     this.manager.addDocument('en', 'Will I get a complete refund if the item is cancelled or returned if I have paid for the order using the \'Credit Card No Cost EMI\' payment option?', 'faq.emi-refund');
     this.manager.addDocument('en', "I see the 'Cancel' button but I can't click on it. Why?", 'faq.cannot-click-cancel-button');
     this.manager.addDocument('en', 'Can I modify/change the specification for the ordered product without cancelling it?', 'faq.modify-product-spec');
-   
+    
    
     this.manager.addAnswer('en', 'faq.cannot-click-cancel-button', 'A greyed-out and disabled \'Cancel\' button can mean any one of the following:\n\n1. The item has been delivered already OR\n2. The item is non-refundable (e.g., Gift Card)');
     this.manager.addAnswer('en', 'faq.modify-product-spec', 'No, once an order is placed, the specification of the product cannot be modified.');
@@ -52,7 +52,7 @@ export class NlpService {
     this.manager.addAnswer('en', 'greet.good-afternoon', 'Good afternoon! How can I assist you today?');
     this.manager.addAnswer('en', 'greet.good-evening', 'Good evening! How can I help you today?');
     this.manager.addAnswer('en', 'greet.how-are-you', 'I am just a chatbot, but thanks for asking! How can I assist you today?') 
-    this.manager.addAnswer('en', 'faq.delivery-contact', 'Once your order is ‘Out for delivery,’ you will get the delivery executive details by visiting the Orders section of your Flipkart account.')
+    this.manager.addAnswer('en', 'faq.delivery-contact', 'Once your order is Out for delivery, you will get the delivery executive details by visiting the Orders section of your Flipkart account.')
     this.manager.addAnswer('en', 'faq.faster-delivery', 'No, the delivery date you see after the order confirmation is provided is based on factors like your address, the seller\'s address, and the time needed by couriers to process and ship your order. Due to these factors, they do not have the option to change the delivery date and have it reach you earlier. However, you can track your order and its movement easily from our app or website.');
     this.manager.addAnswer('en', 'faq.return-order', 'To return your order on Flipkart, place a return request in the Orders page. You will get an option to choose refund/replace/exchange as per our return policy.');
     this.manager.addAnswer('en', 'faq.place-replacement-request', 'To place a request for order replacement, place a return request in the Orders page. You will get an option to choose refund/replace/exchange as per our return policy.');

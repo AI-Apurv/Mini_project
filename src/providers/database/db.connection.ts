@@ -13,6 +13,7 @@ import { Statement } from 'src/Module/orders/statements/entity/statement.entity'
 import { DeliveryBoy } from 'src/Module/delievery-boy/entity/del.entity';
 // import { MessageEntity } from 'src/Module/chat/entity/chat.entity';
 import { Message } from 'src/Module/chat/entity/chat.entity';
+import { Event } from 'src/Module/Event/entity/event.entity';
 const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'postgres',
   host: 'localhost',
@@ -21,7 +22,7 @@ const typeOrmConfig: TypeOrmModuleOptions = {
   password: '      ',
   database: 'Myntra',
   synchronize: true,
-  entities: [User,Admin,Session,Category,Seller,Product,Cart,Order,Review,Address,Statement,DeliveryBoy,Message],
+  entities: [User,Admin,Session,Category,Seller,Product,Cart,Order,Review,Address,Statement,DeliveryBoy,Message,Event],
 };
 
 export default typeOrmConfig;
