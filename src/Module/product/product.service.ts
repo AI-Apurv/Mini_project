@@ -7,6 +7,7 @@ import { Category } from '../admin/productCategory/entity/category.entity';
 import { Seller } from '../seller/entity/seller.entity';
 import { Review } from './reviews/entity/review.entity';
 import { FilterProductDto } from './dto/filterproduct.dto';
+import { Client } from '@elastic/elasticsearch';
 
 @Injectable()
 export class ProductService {
@@ -18,8 +19,42 @@ export class ProductService {
     @InjectRepository(Seller)
     private sellerRepository: Repository<Category>,
     @InjectRepository(Review)
-    private reviewRepository: Repository<Review>
+    private reviewRepository: Repository<Review>,
+
+    // private readonly elasticsearchClient: Client
   ) {}
+
+  // private readonly productIndexMapping = {
+  //   mappings: {
+  //     properties: {
+  //       name: {
+  //         type: 'text',
+  //         analyzer: 'standard',
+  //       },
+  //       quantity: {
+  //         type: 'integer',
+  //       },
+  //       price: {
+  //         type: 'float',
+  //       },
+  //       image: {
+  //         type: 'binary',
+  //       },
+  //       Rating: {
+  //         type: 'float',
+  //       },
+  //       categoryId: {
+  //         type: 'integer',
+  //       },
+  //       SellerId: {
+  //         type: 'integer',
+  //       },
+  //       totalReview: {
+  //         type: 'integer',
+  //       },
+  //     },
+  //   },
+  // }
 
   async getProductById(productId: number): Promise<Product | undefined> {
     return this.productRepository.findOne({where:{productid:productId}});
@@ -29,21 +64,6 @@ export class ProductService {
     const products = await this.productRepository.find();
     return products;
   }
-
-  // async calculateAverageRating(productId: number):Promise<number>{
-  //   const reviews = await this.reviewRepository.find({
-  //     where: {productId},
-  //     select: ['rating']
-  //   });
-
-  //   if(reviews.length === 0)
-  //   {
-  //     return 0 ;
-  //   }
-  //   const totalRating = reviews.reduce((acc,review)=> acc + review.rating,0);
-  //   const averageRating = totalRating/reviews.length;
-  //   return averageRating;
-  // }
 
   async createProduct(createProductDto: CreateProductDto, sellerId:number , imageBuffer:Buffer){
     console.log('inside service--------------------')
@@ -90,10 +110,6 @@ export class ProductService {
   
 
   async getCategoryDetailsByParentId(parentId: number) {
-    // if(parentId !== 1  || parentId !== 2 || parentId!==3)
-    // {
-    //   throw new NotFoundException('Invalid parent Id')
-    // }
     const details = await this.categoryRepository.find({
       where: { parentId },
     });

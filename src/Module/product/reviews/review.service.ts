@@ -42,13 +42,19 @@ export class ReviewService {
         review.productId = productId;
         review.rating = rating;
         review.comment = comment;
-
         await this.reviewRepository.save(review);
-        
-        // const averageRating = await this.productService.calculateAverageRating(productId);
-        // const product = await this.productRepository.findOne({where:{productid:productId}})
-        // product.Rating = averageRating;
-        // await this.productRepository.save(product)
+
+        const product = await this.productRepository.findOne({where:{productid:productId}})
+        if(!product)
+        {
+            throw new NotFoundException('Product Not Found')
+        }
+        const reviews = await this.reviewRepository.find({where:{productId}})
+        const totalRatings = reviews.reduce((sum,review)=>sum+review.rating,0)
+        const averageRating = totalRatings/reviews.length;
+        product.Rating = averageRating;
+        product.totalReview = reviews.length;
+        await this.productRepository.save(product);
         
         return { message: 'Review submitted successfully.' };
     }

@@ -50,11 +50,29 @@ export class ChatsService {
 
   async createMessage(message: string, userId: number,receiverId: number) {
     const user = await this.userRepository.findOne({where:{id:userId}}); 
+    // console.log('user.role----',user.role)
     const uId = user.id
     const receiver = await this.userRepository.findOne({where: {id: receiverId}})
+    // console.log('receiver.role-----',receiver.role)
     if (!user || !receiver) {
       throw new WsException('sender or receiver not found');
     }
+
+    // const allowedRoles: {user:string, receiver: string}[] = [
+    //   {user:'user', receiver: 'admin'},
+    //   {user: 'user', receiver: 'seller'},
+    //   {user: 'seller', receiver: 'user'},
+    //   {user: 'admin', receiver: 'user'},
+    // ] 
+
+    // const isAllowed = allowedRoles.some(roleSet =>
+    //   roleSet.user.includes(user.role) && roleSet.receiver.includes(receiver.role)
+    //   )
+
+    // if(!isAllowed)
+    // {
+    //  throw new WsException('Unauthorized chat');
+    // }
 
     const newMessage = new Message();
     newMessage.message = message;

@@ -12,6 +12,8 @@ import { ReviewsModule } from './reviews/review.module';
 import { UploadInterceptor } from 'src/interceptors/upload.interceptor';
 import { SellerModule } from '../seller/seller.module';
 import { Review } from './reviews/entity/review.entity';
+import { Client } from '@elastic/elasticsearch';
+import { ElasticsearchModule } from '@nestjs/elasticsearch';
 
 @Module({
   imports: [
@@ -19,11 +21,14 @@ import { Review } from './reviews/entity/review.entity';
     MulterModule.register({
       dest: './uploads',
       // Destination folder where uploaded files will be stored
-       }), ReviewsModule,SellerModule
+       }), ReviewsModule,SellerModule,
+      //  ElasticsearchModule.register({
+      //   node: 'http://localhost:9200',
+      //  })
       //  MulterModule.register(multerConfig);
   ],
   controllers: [ProductController],
-  providers: [ProductService,UploadInterceptor],
+  providers: [ProductService,UploadInterceptor,],
   exports: [ProductService]
  
 })

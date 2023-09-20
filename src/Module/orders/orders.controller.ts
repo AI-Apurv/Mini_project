@@ -1,4 +1,4 @@
-import { Controller, Delete, Param,Get, Post, Request, UseGuards, InternalServerErrorException, Body, NotFoundException } from '@nestjs/common';
+import { Controller, Delete, Param,Get, Post, Request, UseGuards,UseInterceptors, InternalServerErrorException, Body, NotFoundException } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from 'src/Middleware/jwt.auth.guard';
@@ -9,6 +9,7 @@ import { CreateOrderDto } from './dto/order.dto';
 import { Address } from '../users/address/entity/address.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from './entity/order.entity';
+import Stripe from 'stripe'
 
 @ApiTags('Orders')
 @Controller('orders')
@@ -78,7 +79,12 @@ export class OrderController {
 
 
     @Get('success')
-    async success(){
+    async success(@Request() req){
+      // console.log(session.payment_status)
+      const {sessionId} = req.query;
+      // const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+
+      console.log('inside the success',sessionId)
       return 'Payment successful. Thanks for purchasing';
     }
 

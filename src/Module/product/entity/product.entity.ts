@@ -42,7 +42,8 @@ export class Product {
   order: Order
 
   
-
+  @Column({default:0})
+  totalReview: number
 
 
 

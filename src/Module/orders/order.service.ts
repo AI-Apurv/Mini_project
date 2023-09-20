@@ -99,6 +99,7 @@ export class OrderService {
 
           }          
         await this.cartRepository.remove(cartItems);
+        
         const totalOrderPrice = savedOrders.reduce((total, order) => total + order.totalPrice, 0);
         const ordersWithDetails = await Promise.all(
           savedOrders.map(async order => {
@@ -125,10 +126,11 @@ export class OrderService {
             }
           ],
           mode: 'payment',
-          success_url : 'http://localhost:3000/orders/success',
+          success_url : 'http://localhost:3000/orders/success?sessionId={CHECKOUT_SESSION_ID}',
           cancel_url: 'http://localhost:3000/orders/cancel'
 
         });
+        console.log('session------------------------------>',session);
         const url =  session.url;
 
         return {ordersWithDetails,totalOrderPrice,url};

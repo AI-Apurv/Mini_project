@@ -11,6 +11,7 @@ import { AddressModule } from './address/address.module';
 import { GoogleStrategy } from 'src/Middleware/google.strategy';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { httpResponse } from 'src/Middleware/httpResponse';
 
 
 
@@ -31,7 +32,7 @@ import { APP_GUARD } from '@nestjs/core';
 
   ],
   controllers: [UserController],
-  providers: [UserService,JwtStrategy,GoogleStrategy,
+  providers: [UserService,JwtStrategy,GoogleStrategy,httpResponse,
   {
     provide: APP_GUARD,
     useClass: ThrottlerGuard,

@@ -4,3 +4,9 @@ export const AddressResponseMessages = {
     ADDRESS_UPDATED: 'Address updated successfully',
     ADDRESS_DELETED: 'Address deleted successfully',
 }
+
+// export const ADDRESSRESPONSE = {
+//     ADDRESS_CREATED: {
+//         httpCode
+//     }
+// }

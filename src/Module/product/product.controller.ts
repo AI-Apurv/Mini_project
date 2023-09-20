@@ -8,6 +8,8 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { UploadInterceptor } from 'src/interceptors/upload.interceptor';
 import { SellerService } from '../seller/seller.service';
 import { FilterProductDto } from './dto/filterproduct.dto';
+import { RedisConfig } from 'src/providers/database/redis.connection';
+
 @ApiTags('Products')
 @Controller('products')
 export class ProductController {
@@ -17,8 +19,14 @@ export class ProductController {
  @ApiOperation({ summary: 'Get all products' })
  @Get('all')
  async getAllProducts() {
- const products = await this.productService.getAllProducts();
- return { products };
+  const key  = 'getAllProduct';
+  let getAllProduct = await RedisConfig.get(key);
+  if(!getAllProduct){
+    const product = await this.productService.getAllProducts();
+    await RedisConfig.set(key,product);
+    getAllProduct = product; 
+  }
+  return getAllProduct;
   }
 
   @ApiBearerAuth()
@@ -57,28 +65,43 @@ export class ProductController {
   
   @ApiOperation({summary:'Get product category'})
   @Get()
-  getProductCategories() {
-    const categoriesWithCounts = [
-      'Mens--1',
-      'Women--2',
-      'Kids--3'
-    ];
-    return categoriesWithCounts;
+  async getProductCategories() {
+    const key = 'product_categories';
+    let cachedCategories = await RedisConfig.get(key);
+
+    if(!cachedCategories){
+      const categoriesWithCounts = [
+        'Mens--1',
+        'Women--2',
+        'Kids--3'
+      ];
+      await RedisConfig.set(key,categoriesWithCounts,86400);
+      cachedCategories = categoriesWithCounts;
+      
+    }
+    return cachedCategories;
   }
 
 
   @ApiOperation({summary:'Get Product details'})
   @Get(':parentId')
   async getCategoryDetails(@Param('parentId') parentId: number) {
-    const details = await this.productService.getCategoryDetailsByParentId(parentId);
-    return details;
+    const key = `product-parentId${parentId}`;
+    let cachedCategories = await RedisConfig.get(key);
+    if(!cachedCategories)
+    {
+      console.log('inside the cachedCategory')
+      const details = await this.productService.getCategoryDetailsByParentId(parentId);
+      await RedisConfig.set(key,details)
+      cachedCategories = details; 
+    }
+     return cachedCategories;
   }
 
 
   @ApiOperation({summary:'Get Product details'})
   @Get('product-details/:productId')
   async getProductDetails(@Param('productId') productId: number, @Query('page',ParseIntPipe) page: number = 1, @Query('limit',ParseIntPipe) limit: number= 10){
-    console.log('inside controller',productId)
     const details = await this.productService.getProducts(productId,page,limit)
     return details;
   }

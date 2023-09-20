@@ -1,4 +1,3 @@
-// swagger.config.ts
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { INestApplication } from '@nestjs/common';
 
@@ -12,5 +11,16 @@ export function setupSwagger(app: INestApplication) {
     .build();
     
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  let swaggerPort ;
+  if (process.env.NODE_ENV === 'qa') {
+    console.log('>>>>>>>>>>>>>>>>>>>>>>',process.env.PORT);
+    swaggerPort = process.env.PORT ;
+  }
+  else if (process.env.NODE_ENV === 'release'){
+    swaggerPort = process.env.PORT;
+  } else {
+    swaggerPort = process.env.PORT ;
+  }
+
+  SwaggerModule.setup('api', app, document, {swaggerOptions:{port:swaggerPort}});
 }
