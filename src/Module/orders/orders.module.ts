@@ -11,12 +11,13 @@ import { Address } from '../users/address/entity/address.entity';
 import { Statement } from './statements/entity/statement.entity';
 import { StatementModule } from './statements/statement.module';
 import { Seller } from '../seller/entity/seller.entity';
+import { httpResponse } from 'src/Middleware/httpResponse';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order,Cart,Product,Address,Statement,]),
-            StatementModule
-            ],
+  imports: [TypeOrmModule.forFeature([Order, Cart, Product, Address, Statement,]),
+    StatementModule
+  ],
   controllers: [OrderController],
-  providers: [OrderService,]
+  providers: [OrderService,httpResponse]
 })
-export class OrdersModule {}
+export class OrdersModule { }

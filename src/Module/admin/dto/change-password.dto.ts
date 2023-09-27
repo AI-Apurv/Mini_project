@@ -14,7 +14,7 @@ export class AdminChangePasswordDto {
   })
   oldPassword: string;
 
-  
+
   @IsString()
   @IsNotEmpty()
   @MinLength(6)

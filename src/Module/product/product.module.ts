@@ -1,4 +1,3 @@
-// product.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductController } from './product.controller';
@@ -12,23 +11,20 @@ import { ReviewsModule } from './reviews/review.module';
 import { UploadInterceptor } from 'src/interceptors/upload.interceptor';
 import { SellerModule } from '../seller/seller.module';
 import { Review } from './reviews/entity/review.entity';
-import { Client } from '@elastic/elasticsearch';
-import { ElasticsearchModule } from '@nestjs/elasticsearch';
+import { ElasticsearchService } from '../elasticSearch/elasticsearch.service';
+import { ElasticsearchModule } from '../elasticSearch/elasticsearch.module';
+import { JwtSellerAuthGuard } from 'src/Middleware/jwt.auth.guard';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Product, Category,Seller,Review]),
     MulterModule.register({
-      dest: './uploads',
-      // Destination folder where uploaded files will be stored
-       }), ReviewsModule,SellerModule,
-      //  ElasticsearchModule.register({
-      //   node: 'http://localhost:9200',
-      //  })
+      dest: './uploads'}),
+      ReviewsModule,SellerModule,ElasticsearchModule
       //  MulterModule.register(multerConfig);
   ],
   controllers: [ProductController],
-  providers: [ProductService,UploadInterceptor,],
+  providers: [ProductService,UploadInterceptor,ElasticsearchService,JwtSellerAuthGuard],
   exports: [ProductService]
  
 })

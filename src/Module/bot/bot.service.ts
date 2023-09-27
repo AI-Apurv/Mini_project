@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { NlpManager,NerManager , NlpUtil } from 'node-nlp';
+import { NlpManager, NerManager, NlpUtil } from 'node-nlp';
 @Injectable()
 export class NlpService {
   private manager = new NlpManager({ languages: ['en'] });
   constructor() {
-    
+
     this.manager.addDocument('en', 'I want to change the address for delivery of my order.', 'faq.change-address');
     this.manager.addDocument('en', 'How can I modify or add an alternate number for the order delivery?', 'faq.modify-number');
     this.manager.addDocument('en', 'Can I get my orders delivered at a specific time?', 'faq.specific-time');
@@ -179,7 +179,7 @@ export class NlpService {
     this.manager.addAnswer('en', 'greet.good-morning', 'Good morning! How can I help you today?');
     this.manager.addAnswer('en', 'greet.good-afternoon', 'Good afternoon! How can I assist you today?');
     this.manager.addAnswer('en', 'greet.good-evening', 'Good evening! How can I help you today?');
-    this.manager.addAnswer('en', 'greet.how-are-you', 'I am just a chatbot, but thanks for asking! How can I assist you today?') 
+    this.manager.addAnswer('en', 'greet.how-are-you', 'I am just a chatbot, but thanks for asking! How can I assist you today?')
     this.manager.addAnswer('en', 'faq.delivery-contact', 'Once your order is Out for delivery, you will get the delivery executive details by visiting the Orders section of your Flipkart account.')
     this.manager.addAnswer('en', 'faq.faster-delivery', 'No, the delivery date you see after the order confirmation is provided is based on factors like your address, the seller\'s address, and the time needed by couriers to process and ship your order. Due to these factors, they do not have the option to change the delivery date and have it reach you earlier. However, you can track your order and its movement easily from our app or website.');
     this.manager.addAnswer('en', 'faq.return-order', 'To return your order on Flipkart, place a return request in the Orders page. You will get an option to choose refund/replace/exchange as per our return policy.');
@@ -193,7 +193,7 @@ export class NlpService {
     this.manager.train();
   }
 
-    async process(message: string) {
+  async process(message: string) {
     const response = await this.manager.process('en', message);
     return response;
   }

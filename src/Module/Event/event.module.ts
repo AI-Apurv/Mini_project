@@ -6,9 +6,9 @@ import { Event } from './entity/event.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { User } from '../users/entity/user.entity';
 @Module({
-  imports: [ ScheduleModule.forRoot(),
-    TypeOrmModule.forFeature([Event,User])],
+  imports: [ScheduleModule.forRoot(),
+  TypeOrmModule.forFeature([Event, User])],
   controllers: [EventController],
   providers: [EventService],
 })
-export class EventModule {}
+export class EventModule { }

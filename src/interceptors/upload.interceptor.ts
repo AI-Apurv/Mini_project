@@ -6,13 +6,13 @@ import { response } from 'express';
 @Injectable()
 export class UploadInterceptor implements NestInterceptor {
   private upload: multer.Multer;
-  
+
   constructor() {
     this.upload = multer({ storage: multerStorage });
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    
+
     const request = context.switchToHttp().getRequest();
     return new Observable(observer => {
       this.upload.single('image')(request, null, async err => {
@@ -22,13 +22,13 @@ export class UploadInterceptor implements NestInterceptor {
         } else {
           observer.next(request.file);
           observer.complete();
-        
+
         }
         next.handle().subscribe(response => {
           observer.next(response);
           observer.complete();
         })
-        
+
       });
     })
   }

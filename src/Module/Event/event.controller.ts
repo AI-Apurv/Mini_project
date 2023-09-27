@@ -1,4 +1,4 @@
-import { Controller, Post, Body,Request, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Request, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventService } from './event.service';
 import { Cron } from '@nestjs/schedule';
@@ -8,19 +8,20 @@ import { JwtAuthGuard } from 'src/Middleware/jwt.auth.guard';
 @ApiTags('Events')
 @Controller('events')
 export class EventController {
-  constructor(private readonly eventService: EventService) {}
-  
+  constructor(private readonly eventService: EventService) { }
+
+
+  /**
+* @author Apurv
+* @description This function will used for adding event details 
+* @Body CreateEventDto
+* @payload name , eventDate
+*/
   @ApiBearerAuth()
-  @ApiOperation({summary: 'Enter the event details '})
+  @ApiOperation({ summary: 'Enter the event details ' })
   @UseGuards(JwtAuthGuard)
   @Post()
-  async createEvent(@Body() createEventDto: CreateEventDto, @Request() req:any){
-    const role = req.user.role;
-    console.log(role)
-    if(role!=='admin')
-    {
-      throw new HttpException('You are not authorized to perform this action', HttpStatus.UNAUTHORIZED);
-    }
+  async createEvent(@Body() createEventDto: CreateEventDto, @Request() req: any) {
     return await this.eventService.createEvent(createEventDto)
   }
 

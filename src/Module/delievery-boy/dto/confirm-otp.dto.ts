@@ -7,7 +7,7 @@ export class ConfirmOTP {
  @ApiProperty()
  @IsNotEmpty()
  @IsString()
- "otp": string
+ otp: string
 
 
 }

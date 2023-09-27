@@ -6,4 +6,4 @@ import { NlpService } from './bot.service';
   controllers: [ChatbotController],
   providers: [NlpService],
 })
-export class ChatbotModule {}
+export class ChatbotModule { }

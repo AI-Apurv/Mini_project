@@ -7,7 +7,8 @@ import { Category } from '../admin/productCategory/entity/category.entity';
 import { Seller } from '../seller/entity/seller.entity';
 import { Review } from './reviews/entity/review.entity';
 import { FilterProductDto } from './dto/filterproduct.dto';
-import { Client } from '@elastic/elasticsearch';
+import { ElasticsearchService } from '../elasticSearch/elasticsearch.service'; // Import the Elasticsearch service
+
 
 @Injectable()
 export class ProductService {
@@ -20,115 +21,98 @@ export class ProductService {
     private sellerRepository: Repository<Category>,
     @InjectRepository(Review)
     private reviewRepository: Repository<Review>,
+    private readonly elasticsearchService: ElasticsearchService, 
+  ) { }
 
-    // private readonly elasticsearchClient: Client
-  ) {}
 
-  // private readonly productIndexMapping = {
-  //   mappings: {
-  //     properties: {
-  //       name: {
-  //         type: 'text',
-  //         analyzer: 'standard',
-  //       },
-  //       quantity: {
-  //         type: 'integer',
-  //       },
-  //       price: {
-  //         type: 'float',
-  //       },
-  //       image: {
-  //         type: 'binary',
-  //       },
-  //       Rating: {
-  //         type: 'float',
-  //       },
-  //       categoryId: {
-  //         type: 'integer',
-  //       },
-  //       SellerId: {
-  //         type: 'integer',
-  //       },
-  //       totalReview: {
-  //         type: 'integer',
-  //       },
-  //     },
-  //   },
-  // }
-
-  async getProductById(productId: number): Promise<Product | undefined> {
-    return this.productRepository.findOne({where:{productid:productId}});
+  async getProductById(productId: number) {
+    return this.productRepository.findOne({ where: { productid: productId } });
   }
+
+
+
 
   async getAllProducts() {
     const products = await this.productRepository.find();
     return products;
   }
 
-  async createProduct(createProductDto: CreateProductDto, sellerId:number , imageBuffer:Buffer){
-    console.log('inside service--------------------')
-    const {name , quantity , price , categoryId} = createProductDto
+
+
+
+  async createProduct(createProductDto: CreateProductDto, sellerId: number, imageBuffer: Buffer) {
+    const { name, quantity, price, categoryId } = createProductDto
     const product = new Product();
     product.name = name;
     product.quantity = quantity;
     product.price = price;
-    product.category = {id: categoryId} as Category;
+    product.category = { id: categoryId } as Category;
     product.image = imageBuffer;
-    product.seller = {sellerid: sellerId} as Seller;
-    console.log('before Image-----------', product)
+    product.seller = { sellerid: sellerId } as Seller;
     await this.productRepository.save(product);
-    
+    await this.elasticsearchService.indexProduct({
+      productid: product.productid,
+      name: product.name,
+      price: product.price,
+      rating: product.Rating,
+      totalReview: product.totalReview
+    });
   }
 
-  async updateProduct(productId: number , updateProductDto, sellerId)
-  {
+
+
+
+  async updateProduct(productId: number, updateProductDto, sellerId) {
     const product = await this.productRepository.findOne({
-      where: {productid: productId , seller: sellerId},
+      where: { productid: productId, seller: sellerId },
       relations: ['seller']
     });
-    console.log(product,'product----------')
-    console.log(sellerId,'sellerid--------------')
-    
-    
-    if(!product)
-    {
+    if (!product) {
       throw new NotFoundException('Product Not Found');
     }
-    console.log(product.seller.sellerid,'product.seller')
-
     if (product.seller.sellerid !== sellerId) {
       throw new UnauthorizedException('You are not authorized to update this product');
     }
-
-    const {name , quantity , price} = updateProductDto;
+    const { name, quantity, price } = updateProductDto;
     product.name = name;
     product.quantity = quantity;
     product.price = price;
-
+    await this.elasticsearchService.indexProduct({
+      productid: product.productid,
+      name: product.name,
+      price: product.price,
+      rating: product.Rating,
+      totalReview: product.totalReview
+    });
     return this.productRepository.save(product);
   }
-  
 
-  async getCategoryDetailsByParentId(parentId: number) {
-    const details = await this.categoryRepository.find({
-      where: { parentId },
-    });
-    return details;
-  }
 
-  async getProducts(productId:number, page:number, limit:number)
-  {
+
+
+  // async getCategoryDetailsByParentId(parentId: number) {
+  //   const details = await this.categoryRepository.find({
+  //     where: { parentId },
+  //   });
+  //   return details;
+  // }
+
+
+
+
+  async getProducts(productId: number, page: number, limit: number) {
     const [items, totalItems] = await this.productRepository.findAndCount({
-      where: {category: {id: productId}},
-      skip: (page-1)*limit,
+      where: { category: { id: productId } },
+      skip: (page - 1) * limit,
       take: limit,
     });
-
-    return {items, totalItems}
-    
+    return { items, totalItems }
   }
 
-  async filterProductsByPrice(filterProduct:FilterProductDto) {
+
+
+
+  async filterProductsByPrice(filterProduct: FilterProductDto) {
     const products = await this.productRepository.find({
       where: {
         price: Between(filterProduct.minPrice, filterProduct.maxPrice),
@@ -136,6 +120,6 @@ export class ProductService {
     });
     return products;
   }
-  
 
+ 
 }

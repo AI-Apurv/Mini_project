@@ -11,53 +11,46 @@ export class Order {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
-  
-
-  // @OneToMany(() => Product, product => product.order)
-  // @JoinColumn({ name: 'productId' })
-  // products: Product;
 
   @ManyToOne(() => Product,)
   @JoinColumn({ name: 'productId' })
   products: Product;
 
-  //---------------------new-----------------------
-  @ManyToOne(()=>Seller)
-  @JoinColumn({name: 'sellerId'})
+  @ManyToOne(() => Seller)
+  @JoinColumn({ name: 'sellerId' })
   seller: Seller
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   sellerId: number
-  //-----------------------------------------------
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   quantity: number;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   totalPrice: number;
-
-  // @Column({nullable:true})
-  // email: number;
 
   @CreateDateColumn()
   orderDate: Date;
 
-  @Column({nullable:true})
-  userId : number;
+  @Column({ nullable: true })
+  userId: number;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   productId: number;
 
-  @Column({default: true})
+  @Column({ default: true })
   orderActive: boolean
 
   @Column()
   addressId: number;
 
-  @Column({default: false})
+  @Column({ default: false })
   orderDelivered: boolean
 
- 
+  @Column({ nullable: true })
+  orderStatus: number
+
+
 
 
 

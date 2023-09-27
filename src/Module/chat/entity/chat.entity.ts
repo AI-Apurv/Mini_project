@@ -9,10 +9,10 @@ export class Message {
   message: string;
 
   @ManyToOne(() => User, { eager: true })
-  @JoinColumn({ name: 'senderId' }) 
+  @JoinColumn({ name: 'senderId' })
   senderId: number;
 
-  @Column({default:null})
+  @Column({ default: null })
   receiverId: number;
 
 

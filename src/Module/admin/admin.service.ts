@@ -16,8 +16,11 @@ import { redis } from "src/providers/database/redis.connection";
 import * as nodemailer from 'nodemailer';
 import { join } from "path";
 import { readFileSync } from "fs";
-import { AdminResponseMessages } from "src/common/responses/admin.response";
+import { ADMINRESPONSE, AdminResponseMessages } from "src/common/responses/admin.response";
 import { sellerResponseMessage } from "src/common/responses/seller.response";
+import { User } from "../users/entity/user.entity";
+import { Userstatus } from "../users/user.model";
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -25,11 +28,12 @@ export class AdminService {
     private adminRepository: Repository<Admin>,
     @InjectRepository(Seller)
     private sellerRepository: Repository<Seller>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private readonly jwtService: JwtService,
-  ) {dotenv.config()}
+  ) { dotenv.config() }
 
   async initAdmin() {
-    
     const existingAdmin = await this.adminRepository.findOne({ where: { username: process.env.ADMIN_USERNAME } });
     if (!existingAdmin) {
       const newAdmin = this.adminRepository.create({
@@ -39,14 +43,15 @@ export class AdminService {
         email: process.env.ADMIN_EMAIL,
         password: await bcrypt.hash(process.env.ADMIN_PASS, 10),
       });
-      
       this.generateTwoFactorSecret(newAdmin)
       await this.adminRepository.save(newAdmin);
-     
     } else {
-      // console.log('Admin already exists.');
+      console.log('Admin already exists.');
     }
   }
+
+
+
 
   async createAdmin() {
     const adminUsername = process.env.ADMIN_USERNAME;
@@ -54,106 +59,97 @@ export class AdminService {
     const adminLastName = process.env.LASTNAME;
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASS;
-      
+
     const admin = new Admin();
     admin.username = adminUsername;
     admin.firstName = adminFirstName;
     admin.lastName = adminLastName;
     admin.email = adminEmail;
     admin.password = await bcrypt.hash(adminPassword, 10);
-
-    console.log(admin)
     await this.adminRepository.save(admin);
   }
 
-  async updateAdmin(updateDto: AdminUpdateDto, adminId: number, userRole: string) {
-    const admin = await this.adminRepository.findOne({where:{adminid:adminId}});
+
+
+
+  async updateAdmin(updateDto: AdminUpdateDto, adminId: number) {
+    const admin = await this.adminRepository.findOne({ where: { adminid: adminId } });
     if (!admin) {
       throw new NotFoundException(AdminResponseMessages.NOT_FOUND);
-    }
-    if (userRole !== 'admin') {
-      throw new UnauthorizedException(AdminResponseMessages.AUTHORIZED_FAILED);
     }
     admin.firstName = updateDto.firstName;
     admin.lastName = updateDto.lastName;
     admin.email = updateDto.email;
-
     await this.adminRepository.save(admin);
   }
 
-  async verifySeller(sellerid: number, userRole: string ) {
-    console.log(userRole)
-    if (userRole !== 'admin') {
-      throw new UnauthorizedException(AdminResponseMessages.AUTHORIZED_FAILED);
-    }
 
-    const seller = await this.sellerRepository.findOne({where:{sellerid}});
+
+
+  async verifySeller(sellerid: number) {
+    const seller = await this.sellerRepository.findOne({ where: { sellerid } });
     if (!seller) {
       throw new NotFoundException(sellerResponseMessage.NOT_FOUND);
     }
-
-
     seller.verify = true;
     await this.sellerRepository.save(seller);
   }
 
+
+
+
   async login(loginDto: AdminLoginDto): Promise<string> {
-    const { email, password,otp} = loginDto;
-    const admin = await this.adminRepository.findOne({where:{email}});
+    const { email, password, otp } = loginDto;
+    const admin = await this.adminRepository.findOne({ where: { email } });
     if (!admin) {
       throw new NotFoundException(AdminResponseMessages.NOT_FOUND);
     }
-
-    
-  
-  if (admin && (await bcrypt.compare(password, admin.password))) {
-    var verified = await speakeasy.totp.verify({      
-      secret: admin.secretKey,      
-      encoding: "ascii",      
-      token: otp,    
-    });    
-    console.log(verified);
-    if(!verified)
-    {
-      throw new UnauthorizedException(AdminResponseMessages.INVALID_TOKEN)
-    }
-    else {
-      const payload = { role:admin.role,username: admin.username, sub: admin.adminid };
-      return this.jwtService.sign(payload);
-    }
-   
-      
-      
+    if (admin && (await bcrypt.compare(password, admin.password))) {
+      var verified = await speakeasy.totp.verify({
+        secret: admin.secretKey,
+        encoding: "ascii",
+        token: otp,
+      });
+      if (!verified) {
+        throw new UnauthorizedException(AdminResponseMessages.INVALID_TOKEN)
+      }
+      else {
+        const payload = { role: admin.role, username: admin.username, sub: admin.adminid };
+        return this.jwtService.sign(payload);
+      }
     }
     throw new UnauthorizedException(AdminResponseMessages.INVALID_CREDENTIALS);
   }
 
+
+
+
   async generateTwoFactorSecret(admin: Admin) {
-
-    var secret = speakeasy.generateSecret({      
-      name: admin.username,    
-    });    
-      
-    const qrCodeDataURL = await new Promise<any>((resolve, reject) => {      
-      qrcode.toDataURL(secret.otpauth_url as any, (err, data) => {        
-        if (err) {          
-          reject(err);        
-        } else {          
-          resolve(data);        
-        }      
-      });    
-    });     
-    const base64Data = qrCodeDataURL.split(";base64,").pop(); 
-    const filePath = `qrcode-${admin.username}.png`;   
-
-    fs.writeFileSync(filePath, base64Data, { encoding: "base64" }); 
+    var secret = speakeasy.generateSecret({
+      name: admin.username,
+    });
+    const qrCodeDataURL = await new Promise<any>((resolve, reject) => {
+      qrcode.toDataURL(secret.otpauth_url as any, (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
+    const base64Data = qrCodeDataURL.split(";base64,").pop();
+    const filePath = `qrcode-${admin.username}.png`;
+    fs.writeFileSync(filePath, base64Data, { encoding: "base64" });
     admin.secretKey = secret.ascii;
     this.adminRepository.save(admin);
   }
 
-  async deleteUser(email:string): Promise<void>{
-    const admin = await this.adminRepository.findOne({where: {email}});
-    if(!admin){
+
+
+
+  async deleteUser(email: string): Promise<void> {
+    const admin = await this.adminRepository.findOne({ where: { email } });
+    if (!admin) {
       throw new NotFoundException(AdminResponseMessages.NOT_FOUND)
     }
     await this.adminRepository.remove(admin);
@@ -161,17 +157,14 @@ export class AdminService {
 
 
 
+
   async sendPasswordResetEmail(email: string): Promise<void> {
-    const admin = await this.adminRepository.findOne({where: {email}});
-  
+    const admin = await this.adminRepository.findOne({ where: { email } });
     if (!admin) {
       throw new NotFoundException(AdminResponseMessages.NOT_FOUND);
     }
-  
     const OTP = Math.floor(1000 + Math.random() * 9000);
-    await redis.set(email,OTP.toString(),'EX',60)
-
-    
+    await redis.set(email, OTP.toString(), 'EX', 60)
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       host: 'smtp.gmail.com',
@@ -179,19 +172,17 @@ export class AdminService {
       secure: true,
       auth: {
         user: process.env.EMAIL,
-        pass: process.env.PASSWORD ,
+        pass: process.env.PASSWORD,
       },
     });
-
-    const templatePath =  join('/home/admin2/Desktop/dem/my-nest-app/src/email-template')
-    const htmlTemplate =   readFileSync(`${templatePath}/password-reset.html`, 'utf-8');  
+    const templatePath = join('/home/admin2/Desktop/dem/my-nest-app/src/email-template')
+    const htmlTemplate = readFileSync(`${templatePath}/password-reset.html`, 'utf-8');
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
       subject: 'Password Reset Request',
-      html: htmlTemplate.replace('{{ OTP }}',OTP.toString())
+      html: htmlTemplate.replace('{{ OTP }}', OTP.toString())
     };
-  
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.log(error);
@@ -202,17 +193,18 @@ export class AdminService {
     })
   }
 
-  
-  
-  async resetPassword(email: string, otp: string , newPassword: string): Promise<string> {
+
+
+
+  async resetPassword(email: string, otp: string, newPassword: string): Promise<string> {
     let redisOTP = await redis.get(email)
     console.log(redisOTP)
-    if (redisOTP==otp) {
+    if (redisOTP == otp) {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
-      const admin = await this.adminRepository.findOne({where: {email}});
-      if(admin)
-      await redis.del(email)
-      
+      const admin = await this.adminRepository.findOne({ where: { email } });
+      if (admin)
+        await redis.del(email)
+
       if (admin) {
         admin.password = hashedPassword;
         await this.adminRepository.save(admin);
@@ -224,35 +216,65 @@ export class AdminService {
     }
   }
 
-  async changePassword(adminId: number,adminchangePasswordDto: AdminChangePasswordDto): Promise<void> {
-    const admin = await this.adminRepository.findOne({where:{adminid:adminId}});
+
+
+
+  async changePassword(adminId: number, adminchangePasswordDto: AdminChangePasswordDto): Promise<void> {
+    const admin = await this.adminRepository.findOne({ where: { adminid: adminId } });
     if (!admin) {
       throw new Error(AdminResponseMessages.NOT_FOUND);
     }
     const isPasswordValid = await this.validateOldPassword(admin, adminchangePasswordDto.oldPassword);
-
-    if(!isPasswordValid){
+    if (!isPasswordValid) {
       throw new BadRequestException(AdminResponseMessages.INVALID_PASSWORD)
     }
-
-    if (adminchangePasswordDto.oldPassword === adminchangePasswordDto.newPassword){
+    if (adminchangePasswordDto.oldPassword === adminchangePasswordDto.newPassword) {
       throw new BadRequestException(AdminResponseMessages.DIFF_PASS)
     }
-    
-    
     admin.password = await this.hashPassword(adminchangePasswordDto.newPassword);
-
     await this.adminRepository.save(admin);
   }
 
-  private async validateOldPassword(admin:Admin , oldPassword:string): Promise<boolean>{
-    return await bcrypt.compare(oldPassword,admin.password)
+
+
+
+  private async validateOldPassword(admin: Admin, oldPassword: string): Promise<boolean> {
+    return await bcrypt.compare(oldPassword, admin.password)
   }
 
-  private async hashPassword(password:string): Promise<string>{
-    return await bcrypt.hash(password,10);
+
+
+
+  private async hashPassword(password: string): Promise<string> {
+    return await bcrypt.hash(password, 10);
   }
 
 
+
+  async blockUser(userId: number) {
+    const user = await this.userRepository.findOne({ where: { id: userId } })
+    if (!user) {
+      throw new NotFoundException(AdminResponseMessages.USER_NOT_FOUND)
+    }
+    user.userStatus = Userstatus.blocked;
+    await this.userRepository.save(user);
+  }
+
+
+
+  
+  async unblockUser(userId: number) {
+    const user = await this.userRepository.findOne({ where: { id: userId } })
+    if (!user) {
+      throw new NotFoundException(AdminResponseMessages.USER_NOT_FOUND)
+    }
+    if (user.userStatus === Userstatus.blocked) {
+      user.userStatus = Userstatus.inactive
+    }
+    else {
+      throw new NotFoundException(AdminResponseMessages.NOT_BLOCKED)
+    }
+    await this.userRepository.save(user);
+  }
 
 }

@@ -1,4 +1,10 @@
+import { HTTP } from "./code.response"
+
+
 export const AdminResponseMessages = {
+    UNBLOCK_USER: 'User unblocked successfully',
+    NOT_BLOCKED: 'this user is not blocked',
+    USER_NOT_FOUND: 'user not found',
     NOT_FOUND: 'Admin not found.',
     AUTHORIZED_FAILED: 'You are not authorized to perform this action.',
     ADMIN_CREATED: 'Admin created successfully.',
@@ -18,5 +24,95 @@ export const AdminResponseMessages = {
     INVALID_CREDENTIALS: 'invalid credentials',
     MAIL_ERROR: 'Error sending email',
     INVALID_PASSWORD: 'invalid password',
-    DIFF_PASS: 'New password must be different from the old password'
+    DIFF_PASS: 'New password must be different from the old password',
+    DELETE_FAILED: 'Failed to delete the admin',
+    BLOCK_USER: 'User blocked successfully'
+}
+
+
+
+
+export const ADMINRESPONSE = {
+    VERIFY_SELLER_SUCCESS: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.VERIFY_SELLER_SUCCESS
+    },
+    BLOCK_USER: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.BLOCK_USER
+    },
+    UNBLOCK_USER: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.UNBLOCK_USER
+    },
+    SESSION_STATUS: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.SESSION_STATUS
+    },
+    PASSWORD_UPDATED: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.PASSWORD_UPDATED
+    },
+    ADMIN_CREATED: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.ADMIN_CREATED
+    },
+    PASSWORD_RESET_SUCCESS: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.PASSWORD_RESET_SUCCESS
+    },
+    LOGIN_SUCCESS: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.LOGIN_SUCCESS
+    },
+
+    NOT_FOUND: {
+        httpCode: HTTP.NOT_FOUND,
+        statusCode: HTTP.NOT_FOUND,
+        message: AdminResponseMessages.NOT_FOUND
+    },
+    DELETE_FAILED: {
+        httpCode: HTTP.BAD_REQUEST,
+        statusCode: HTTP.BAD_REQUEST,
+        message: AdminResponseMessages.DELETE_FAILED
+    },
+
+    UPDATE_SUCCESS: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.UPDATE_SUCCESS
+    },
+
+    DELETE_SUCCESS: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.DELETE_SUCCESS
+    },
+
+    FORGOT_PASSWORD_EMAIL_SENT: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.FORGOT_PASSWORD_EMAIL_SENT
+    },
+
+    PASSWORD_RESET_FAILED: {
+        httpCode: HTTP.BAD_REQUEST,
+        statusCode: HTTP.BAD_REQUEST,
+        message: AdminResponseMessages.PASSWORD_RESET_FAILED
+    },
+
+    LOGOUT_SUCCESS: {
+        httpCode: HTTP.SUCCESS,
+        statusCode: HTTP.SUCCESS,
+        message: AdminResponseMessages.LOGOUT_SUCCESS
+    },
+
 }

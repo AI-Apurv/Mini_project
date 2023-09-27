@@ -8,15 +8,16 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from 'src/Middleware/jwt.strategy';
 import { Order } from '../orders/entity/order.entity';
 import { User } from '../users/entity/user.entity';
+import { httpResponse } from 'src/Middleware/httpResponse';
 
 @Module({
   imports: [TypeOrmModule.forFeature([DeliveryBoy,Order,User]),
    JwtModule.register({ 
-    secret: 'your_secret_key', 
+    secret: 'deliveryBoy_secret_key', 
     signOptions: { expiresIn: '1h' },
   }),],
   controllers: [DeliveryBoyController],
-  providers: [DeliveryBoyService,JwtStrategy],
-  exports: [DeliveryBoyService], // Export the service if needed by other modules
+  providers: [DeliveryBoyService,JwtStrategy,httpResponse],
+  exports: [DeliveryBoyService], 
 })
 export class DeliveryBoyModule {}

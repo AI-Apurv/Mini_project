@@ -19,12 +19,15 @@
     <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
   <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+  <!-- [![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor) -->
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Welcome to my project! This is a E-Commerce website made in nest.js framework and postgres database.It consists of multiple modules such as admin, seller , user , delieveryBoy. It allows users to quickly and easily add, delete and update product in their cart and then they can place order .User can also reset their password in case they forgot their password. I am using nodemailer to send password reset email to user registered email id.
+User can also verify their contact number , for verifying contact number I am using twilio.In this project I have also implemented payment using stripe ,elasticsearch, chatbot and chat system.
+
+For the admin module I have implemented two-factor authentication.I have implemented 2fa using npm speakeasy package.Admin can also verify seller , block and unblock the user . Admin can also add event date and event name and before the 24 hr of event start time,  remainder mail will be sent to all the user informing them about the upcoming event.To do so I am using node cron
 
 ## Installation
 
@@ -35,14 +38,14 @@ $ npm install
 ## Running the app
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
+# development mode
 $ npm run start:dev
 
-# production mode
-$ npm run start:prod
+# release mode
+$ npm run start:release
+
+# testing mode
+$ npm run start:qa
 ```
 
 ## Test

@@ -9,6 +9,8 @@ import { User } from '../users/entity/user.entity';
 import * as nodemailer from 'nodemailer';
 import { redis } from 'src/providers/database/redis.connection';
 import { UpdateDto } from './dto/update.dto';
+import { deliveryBoyResponseMessage } from 'src/common/responses/deliveryBoy.response';
+import { Orderstatus } from '../orders/order.model';
 
 @Injectable()
 export class DeliveryBoyService {
@@ -19,48 +21,51 @@ export class DeliveryBoyService {
     private readonly orderRepository: Repository<Order>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>
-  ) {}
-  async validateUser(email: string, password: string): Promise<DeliveryBoy | null> {
-    const user = await this.deliveryBoyRepository.findOne({ where: { email } }); 
-    console.log(email , password , user.password)
-    if (user && (await bcrypt.compare(password,user.password))) {
-      console.log(user)
+  ) { }
+
+
+
+
+  async validateUser(email: string, password: string) {
+    const user = await this.deliveryBoyRepository.findOne({ where: { email } });
+    console.log(email, password, user.password)
+    if (user && (await bcrypt.compare(password, user.password)))
       return user;
-    }
     return null;
   }
 
-  async signup(signupDto: DBSignupDto): Promise<void> {
-    const { name,email, password, } = signupDto;
-    
+
+
+
+  async signup(signupDto: DBSignupDto) {
+    const { name, email, password } = signupDto;
     const existingUser = await this.deliveryBoyRepository.findOne({ where: { email } });
     if (existingUser) {
-    throw new ConflictException('this email already exists');
-   }
-   const hashedPassword = await this.hashPassword(password)
-
-  const newUser = this.deliveryBoyRepository.create({
-    name,
-    email,
-    password: hashedPassword,
-    
-  });
-  // newUser.hashPassword(password); 
-  await this.deliveryBoyRepository.save(newUser);
-  
+      throw new ConflictException(deliveryBoyResponseMessage.ALREADY_EXIST);
+    }
+    const hashedPassword = await this.hashPassword(password)
+    const newUser = this.deliveryBoyRepository.create({
+      name,
+      email,
+      password: hashedPassword,
+    });
+    await this.deliveryBoyRepository.save(newUser);
   }
 
-  async confirmDeliveryOtp(orderId: number): Promise<void> {
+
+
+
+
+  async confirmDeliveryOtp(orderId: number) {
     const order = await this.orderRepository.findOne({ where: { id: orderId } });
     if (!order) {
-      return null; // Order not found
+      return null;
     }
-    const user = await this.userRepository.findOne({where: {id:order.userId}})
+    const user = await this.userRepository.findOne({ where: { id: order.userId } })
     const customerEmail = user.email
     const OTP = Math.floor(1000 + Math.random() * 9000);
-    await redis.set(customerEmail,OTP.toString())
+    await redis.set(customerEmail, OTP.toString())
 
-    
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       host: 'smtp.gmail.com',
@@ -68,7 +73,7 @@ export class DeliveryBoyService {
       secure: true,
       auth: {
         user: 'apurv1@appinventiv.com',
-        pass: 'atldfmccuufdvqzm' ,
+        pass: 'atldfmccuufdvqzm',
       },
     });
 
@@ -76,51 +81,64 @@ export class DeliveryBoyService {
       from: 'apurv1@appinventiv.com',
       to: customerEmail,
       subject: 'Order Confirmation Otp',
-      text:`Your otp ${OTP}` 
+      text: `Your otp ${OTP}`
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.log(error);
-        throw new InternalServerErrorException('Error sending email');
+        throw new InternalServerErrorException(deliveryBoyResponseMessage.ERROR_MAIL);
       } else {
         console.log('Email sent: ' + info.response);
       }
     })
   }
 
-  async confirmDelivery(orderId: number, otp:string): Promise<void> {
-   
+
+
+
+
+  async confirmDelivery(orderId: number, otp: string): Promise<void> {
     const order = await this.orderRepository.findOne({ where: { id: orderId } });
     if (!order) {
-      return null; // Order not found
+      return null;
     }
-    const user = await this.userRepository.findOne({where: {id:order.userId}})
+    const user = await this.userRepository.findOne({ where: { id: order.userId } })
     const customerEmail = user.email
     let redisOTP = await redis.get(customerEmail);
-    if(redisOTP==otp)
-    {
+    if (redisOTP == otp) {
       order.orderDelivered = true;
+    order.orderStatus = Orderstatus.delivered;
       await this.orderRepository.save(order);
     }
-    else{
-      throw new Error('Invalid OTP')
-    } 
+    else {
+      throw new Error(deliveryBoyResponseMessage.INVALID_OTP)
+    }
   }
 
-  async updateUserDetails(email: string , updateDelDto: UpdateDto): Promise<void>{
-    const del = await this.deliveryBoyRepository.findOne({where: {email}});
-  
-    if(!del){
-      throw new NotFoundException('User not found');
+
+
+
+
+  async updateUserDetails(email: string, updateDelDto: UpdateDto) {
+    const del = await this.deliveryBoyRepository.findOne({ where: { email } });
+    if (!del) {
+      throw new NotFoundException(deliveryBoyResponseMessage.NOT_FOUND);
     }
     del.name = updateDelDto.name;
     del.email = updateDelDto.email;
     await this.deliveryBoyRepository.save(del);
-   }
-
-  private async hashPassword(password:string): Promise<string>{
-    return await bcrypt.hash(password,10);
   }
 
+
+
+
+  private async hashPassword(password: string) {
+    return await bcrypt.hash(password, 10);
   }
+
+
+
+
+
+}

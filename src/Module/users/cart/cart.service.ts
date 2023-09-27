@@ -16,7 +16,6 @@ export class CartService {
 
   async addToCart(userId: number, productId: number, quantity: number) {
     const product = await this.productRepository.findOne({where:{productid:productId}})
-    console.log(product)
     if(!product){
         throw new NotFoundException('Product not found');
     }
@@ -44,13 +43,11 @@ export class CartService {
             product: {productid:productId},
             quantity,
         })       
-      //----------------------------------------------//
-      // cartItem.product.push({})
     }
     const totalPrice = product.price * cartItem.quantity;
     cartItem.price = totalPrice;
     await this.cartRepository.save(cartItem);
-
+    return product;
   }
 
   async getCartDetailsForUser(userId: number): Promise<Cart[]> {

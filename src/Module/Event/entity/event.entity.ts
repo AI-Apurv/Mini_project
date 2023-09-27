@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('Event')
 export class Event {
@@ -8,12 +8,9 @@ export class Event {
   @Column()
   name: string;
 
-  // @Column({ type: 'timestamp' })
-  // eventDate: Date;
-
   @Column()
   eventDate: string;
 
- 
-   
+
+
 }

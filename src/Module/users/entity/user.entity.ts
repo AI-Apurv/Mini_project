@@ -23,7 +23,7 @@ export class User {
   @Column()
   password: string;
 
-  @Column()
+  @Column({nullable:true})
   contactNumber: string;
 
   @Column({default: 'user'})

@@ -37,8 +37,8 @@ import { EventModule } from './Module/Event/event.module';
     DeliveryBoyModule,
     ChatsModule,
     ChatbotModule,
-    EventModule
-    
+    EventModule,
+     
   ],
   controllers: [AppController],
   providers: [AppService],

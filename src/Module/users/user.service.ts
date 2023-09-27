@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, ConflictException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entity/user.entity';
@@ -15,7 +15,11 @@ import * as dotenv from 'dotenv'
 import { createClient } from 'redis';
 import * as twilio from 'twilio';
 import { Userstatus } from './user.model';
+import { USERRESPONSE, userResponseMessages } from 'src/common/responses/user.response';
 const client = createClient()
+
+
+
 
 @Injectable()
 export class UserService {
@@ -28,56 +32,37 @@ export class UserService {
 
   ) {
     dotenv.config(),
-    this.tClient = twilio('ACfc74e590c8daf735c27d6d0ca5368ed9', '1b993ff1e231b36d01c078fbdf83326c')
+      this.tClient = twilio(process.env.TWILIO_ID, process.env.TWILIO_SECRET)
   }
 
-  // async signup(signupDto: SignupDto): Promise<void> {
-  //   const { username, firstName, lastName, email, password, contactNumber } = signupDto;
 
-  //   const existingUser = await this.userRepository.findOne({ where: { email } });
-  //   if (existingUser) {
-  //   throw new ConflictException('User with this email already exists');
-  //  }
 
-  // const newUser = this.userRepository.create({
-  //   username,
-  //   firstName,
-  //   lastName,
-  //   email,
-  //   password,
-  //   contactNumber,
-  // });
-  // newUser.hashPassword(); 
-  // await this.userRepository.save(newUser);
+  
+  async findUser(email: string) {
+    const user = this.userRepository.findOne({ where: { email: email } })
+    if(user) return user
+    else return null
+  }
 
-  // }
 
-  async signup(signupDto: SignupDto): Promise<void> {
+
+
+  async signup(signupDto: SignupDto) {
     const { username, firstName, lastName, email, password, contactNumber } = signupDto;
-
     let existingUser = await this.userRepository.findOne({ where: { email } });
-
     if (existingUser) {
       if (existingUser.userStatus === Userstatus.deleted) {
         existingUser.username = username;
         existingUser.firstName = firstName;
         existingUser.lastName = lastName;
-        existingUser.password = password; 
+        existingUser.password = password;
         existingUser.userStatus = Userstatus.active;
         await this.userRepository.save(existingUser);
       } else {
-        throw new ConflictException('User with this email already exists');
+        throw new ConflictException(userResponseMessages.ALREADY_EXISTS);
       }
     } else {
-      const newUser = this.userRepository.create({
-        username,
-        firstName,
-        lastName,
-        email,
-        password,
-        contactNumber,
-        userStatus: Userstatus.active, // Set the status to active for new users
-      });
+      const newUser = this.userRepository.create({ username, firstName, lastName, email, password, contactNumber, userStatus: Userstatus.active });
       newUser.hashPassword();
       await this.userRepository.save(newUser);
     }
@@ -86,9 +71,7 @@ export class UserService {
 
 
 
-
-
-  async validateUser(email: string, password: string): Promise<User | null> {
+  async validateUser(email: string, password: string) {
     const user = await this.userRepository.findOne({ where: { email } });
     if (user && (await bcrypt.compare(password, user.password))) {
       return user;
@@ -97,12 +80,19 @@ export class UserService {
   }
 
 
+
+
+  async checkUserStatus(user: User) {
+    const status = user.userStatus;
+    return status;
+  }
+
+
+
+
   async updateUserDetails(email: string, updateUserDto: UpadteUserDto): Promise<void> {
     const user = await this.userRepository.findOne({ where: { email } });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    if (!user) throw new NotFoundException('User not found');
     user.firstName = updateUserDto.firstName;
     user.lastName = updateUserDto.lastName;
     user.contactNumber = updateUserDto.contactNumber;
@@ -110,39 +100,38 @@ export class UserService {
   }
 
 
+
+
   async deleteUser(email: string): Promise<void> {
     const user = await this.userRepository.findOne({ where: { email } });
-    if (!user) {
-      throw new NotFoundException('User not found')
-    }
+    if (!user) throw new NotFoundException('User not found')
     user.userStatus = Userstatus.deleted
     await this.userRepository.save(user);
   }
 
+
+
+
   async changePassword(userId: number, userchangePasswordDto: UserChangePasswordDto): Promise<void> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    if (!user) throw new NotFoundException('User not found');
     const isPasswordValid = await this.validateOldPassword(user, userchangePasswordDto.oldPassword);
-
-    if (!isPasswordValid) {
-      throw new BadRequestException('Invalid old password')
-    }
-
-    if (userchangePasswordDto.oldPassword === userchangePasswordDto.newPassword) {
+    if (!isPasswordValid) throw new BadRequestException('Invalid old password')
+    if (userchangePasswordDto.oldPassword === userchangePasswordDto.newPassword)
       throw new BadRequestException('New password must be different from the old password')
-    }
-
-
     user.password = await this.hashPassword(userchangePasswordDto.newPassword);
-
     await this.userRepository.save(user);
   }
+
+
+
 
   private async validateOldPassword(user: User, oldPassword: string): Promise<boolean> {
     return await bcrypt.compare(oldPassword, user.password)
   }
+
+
+
 
   private async hashPassword(password: string): Promise<string> {
     return await bcrypt.hash(password, 10);
@@ -150,17 +139,12 @@ export class UserService {
 
 
 
+
   async sendPasswordResetEmail(email: string): Promise<void> {
     const user = await this.userRepository.findOne({ where: { email } });
-
-    if (!user) {
-      throw new NotFoundException('Email not found');
-    }
-
+    if (!user) throw new NotFoundException('Email not found');
     const OTP = Math.floor(1000 + Math.random() * 9000);
     await redis.set(email, OTP.toString(), 'EX', 60)
-
-
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       host: 'smtp.gmail.com',
@@ -171,7 +155,6 @@ export class UserService {
         pass: process.env.PASSWORD,
       },
     });
-
     const templatePath = join('/home/admin2/Desktop/dem/my-nest-app/src/email-template')
     const htmlTemplate = readFileSync(`${templatePath}/password-reset.html`, 'utf-8');
     const mailOptions = {
@@ -180,28 +163,22 @@ export class UserService {
       subject: 'Password Reset Request',
       html: htmlTemplate.replace('{{ OTP }}', OTP.toString())
     };
-
     transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log(error);
+      if (error)
         throw new InternalServerErrorException('Error sending email');
-      } else {
+      else
         console.log('Email sent: ' + info.response);
-      }
     })
   }
 
+
+
+
   async verifyUserEmail(email: string): Promise<void> {
     const user = await this.userRepository.findOne({ where: { email } });
-
-    if (!user) {
-      throw new NotFoundException('Email not found');
-    }
-
+    if (!user) throw new NotFoundException('Email not found');
     const OTP = Math.floor(1000 + Math.random() * 9000);
     await redis.set(email, OTP.toString(), 'EX', 60)
-
-
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       host: 'smtp.gmail.com',
@@ -212,98 +189,124 @@ export class UserService {
         pass: process.env.PASSWORD,
       },
     });
-
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
       subject: 'Email Verification otp',
       text: `otp to verify mail ${OTP}`
     };
-
     transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log(error);
+      if (error)
         throw new InternalServerErrorException('Error sending email');
-      } else {
+      else
         console.log('Email sent: ' + info.response);
-      }
     })
   }
 
-  async emailVerificationOtp(email: string, otp: string): Promise<{ message: string }> {
-    console.log('inside the service', otp, email)
+
+
+
+  async emailVerificationOtp(email: string, otp: string){
     let redisOTP = await redis.get(email)
-    console.log(redisOTP)
     const user = await this.userRepository.findOne({ where: { email: email } })
-    if (!user) {
-      return { message: 'Email does not exist' }
-    }
+    if (!user) return userResponseMessages.EMAIL_NOT_EXIST;
     if (redisOTP == otp) {
       user.isActive = true
       this.userRepository.save(user);
-      return { message: 'email verified successfully' }
+      await redis.del(email)
     }
     else {
-      return { message: "Invalid otp" }
+      throw new BadRequestException(userResponseMessages.INVALID_OTP);
     }
 
   }
-
 
 
 
 
   async resetPassword(email: string, otp: string, newPassword: string): Promise<string> {
     let redisOTP = await redis.get(email)
-    console.log(redisOTP)
     if (redisOTP == otp) {
-      console.log("enter resetpassword verify")
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       const user = await this.userRepository.findOne({ where: { email } });
-      if (user)
-        await redis.del(email)
-
+      if (user) await redis.del(email)
       if (user) {
         user.password = hashedPassword;
         await this.userRepository.save(user);
         return 'Password reset successful. Please login again.';
       }
     } else {
-      console.log()
       throw new Error('Invalid OTP');
     }
   }
 
 
-  async getActiveSession(userId: number): Promise<Session | undefined> {
-    console.log("Inside get active session")
+
+
+  async getActiveSession(userId: number) {
     return this.sessionRepository.findOne({
       where: { user: { id: userId }, isActive: true },
     });
   }
 
 
-  async updateSession(session: Session, isActive: boolean): Promise<void> {
+
+
+  async updateSession(session: Session, isActive: boolean) {
     session.isActive = isActive;
     await this.sessionRepository.save(session);
   }
 
-  async googleLogin(req) {
+
+
+
+
+ async googleLogin(req) {
     if (!req.user) {
       return 'No user from google'
     }
-
-    const existingUser = await this.userRepository.findOne({ where: { email: req.user.email } })
-    if (existingUser) {
-      return 'User logged in successful,'
-    }
-    else {
+    const existingUser = await this.userRepository.findOne({where:{email:req.user.email}})
+    if(existingUser)
+    return USERRESPONSE.LOGIN_SUCCESS
+    else
+    {
       const newUser = new User();
       newUser.firstName = req.user.firstName;
       newUser.lastName = req.user.lastName;
       newUser.email = req.user.email;
-      console.log('@@@@@@@@@@@@@@@', newUser)
-      await this.userRepository.save(newUser)
+      const passwordLength = 8 ;
+      const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let password = '';
+      for(let i=0 ; i<passwordLength ; i++){
+        password += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
+      newUser.password = password;
+      const randomNumber = Math.floor(Math.random() * 100 )+1;
+      newUser.username = `${newUser.firstName}${randomNumber}`;
+      newUser.userStatus = Userstatus.active
+      await this.userRepository.save(newUser);
+      const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.PASSWORD,
+      },
+    });
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: req.user.email,
+      subject: 'username and password',
+      text: `your login credentials are email ${req.user.email} and password ${password}. Your username is ${newUser.username}`
+    };
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error)
+        throw new InternalServerErrorException('Error sending email');
+      else
+        console.log('Email sent: ' + info.response);
+    })
     }
     return {
       message: 'User information from google',
@@ -311,38 +314,51 @@ export class UserService {
     }
   }
 
-  async sendVerificationCode(phoneNumber: string, userId: number): Promise<{ message: string }> {
+
+
+
+  async sendVerificationCode(phoneNumber: string, userId: number) {
     try {
       const user = await this.userRepository.findOne({ where: { id: userId } })
-      if (user.contactNumber !== phoneNumber) {
-        return { message: 'this contact number is invalid or it is not registered' }
-      }
+      if (user.contactNumber !== phoneNumber)
+       throw new ConflictException('This contact number is invalid or it is not registered')
       const code = Math.floor(1000 + Math.random() * 9000);
-      // console.log(user.email)
-      // await redis.set(user.email,code.toString(),'EX',60)
-      // console.log(redis.get(user.email))
+      await redis.set(phoneNumber, code.toString(), 'EX', 60)
       const message = await this.tClient.messages.create({
         body: `Your verification code is : ${code}`,
         to: `+91${phoneNumber}`,
         from: '+12565300048'
       });
-      return { message: `Verification code sent to ${phoneNumber}: ${message.sid} ` }
     }
     catch (error) {
-      console.log(`Error sending verification code ${error}`)
-      throw error;
+      throw new Error('Failed to send verification code');
     }
   }
 
-  // async matchVerificationCode(code:string,userId:number):Promise<{message:string}>{
-  //   const user = await this.userRepository.findOne({where:{id:userId}})
-  //   let redisCode = await redis.get(user.email)
-  //   if(redisCode===code)
-  //   {
-  //     return {message:'Contact number verified'}
-  //   }
-  //   return {message:'Invalid code'}
-  // }
+
+
+  
+  async verifyContactCode(otp:string,userId:number) {
+    const user = this.userRepository.findOne({where:{id:userId}})
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } })
+      const code = await redis.get(`${user.contactNumber}`)
+      if(code==otp)
+      {
+        user.isActive = true
+        this.userRepository.save(user);
+      }
+      else{
+        throw new BadRequestException('Invalid OTP');
+      }
+    }
+    catch (error) {
+      throw new Error('Failed to send verification code');
+    }
+  }
+
+
+
 
 }
 

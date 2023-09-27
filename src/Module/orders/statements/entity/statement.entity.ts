@@ -6,16 +6,16 @@ export class Statement {
   @PrimaryGeneratedColumn()
   statementId: number;
 
-  @ManyToOne(() => Order) 
+  @ManyToOne(() => Order)
   @JoinColumn({ name: 'orderId' })
   order: number;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   creditId: number;
 
   @Column()
   debitId: number;
 
-  @Column('decimal', { precision: 10, scale: 2 }) 
+  @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
 }

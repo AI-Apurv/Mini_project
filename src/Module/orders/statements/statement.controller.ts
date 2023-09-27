@@ -1,46 +1,72 @@
-import { Controller, UseGuards,Request,Get, Post, NotFoundException } from '@nestjs/common';
+import { Controller, UseGuards, Request, Get, Res, Post, NotFoundException } from '@nestjs/common';
 import { StatementService } from './statements.service';
 import { JwtAuthGuard } from 'src/Middleware/jwt.auth.guard';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { httpResponse } from 'src/Middleware/httpResponse';
+import { ORDERRESPONSE } from 'src/common/responses/order.response';
+import { Response } from 'express';
+
+
 
 @ApiTags('Transactions')
 @Controller('statement')
 export class StatementController {
-    constructor(private readonly statementService: StatementService) {}    
-  
+  constructor(private readonly statementService: StatementService,
+    private readonly httpResponse: httpResponse) { }
+
+
+
+
+  /**
+* @author Apurv
+* @description This function will used for getting the transaction details
+*/
   @ApiBearerAuth()
-  @ApiOperation({summary:'get Transaction detail'})
+  @ApiOperation({ summary: 'get Transaction detail' })
   @Get('transactions')
   @UseGuards(JwtAuthGuard)
-  async getTransactions(@Request() req:any){
+  async getTransactions(@Request() req: any, @Res() response: Response) {
     const id = req.user.userId;
-    console.log(id)
     const transactions = await this.statementService.getTransactionsById(id);
-    return transactions;
+    return this.httpResponse.sendResponse(response, ORDERRESPONSE.TRANSACTION, transactions)
   }
 
+
+
+
+  /**
+  * @author Apurv
+  * @description This function will return total seller earning
+  */
   @ApiBearerAuth()
-  @ApiOperation({summary:'get Total seller earning'})
+  @ApiOperation({ summary: 'get Total seller earning' })
   @Get('seller-total-earning')
   @UseGuards(JwtAuthGuard)
-  async getTotalEarning(@Request() req){
+  async getTotalEarning(@Request() req, @Res() response: Response) {
     const sellerId = req.user.userId;
-    console.log(sellerId)
     const totalEarnings = await this.statementService.calculateTotalEarnings(sellerId);
-    return {totalEarnings}
+    return this.httpResponse.sendResponse(response, ORDERRESPONSE.SELLER_EARNING, totalEarnings)
   }
- 
+
+
+
+
+
+  /**
+  * @author Apurv
+  * @description This function will return total platform earning
+  */
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get Total Platform Earnings' })
   @Get('platform-total-earning')
   @UseGuards(JwtAuthGuard)
-  async getPlatformTotalEarning(@Request() req) {
-    const role = req.user.role;
-    if(role!=='admin')
-    throw new NotFoundException('Only admin are allowed')
-
+  async getPlatformTotalEarning(@Request() req, @Res() response: Response) {
     const platformTotalEarnings = await this.statementService.calculatePlatformTotalEarnings();
-    return { platformTotalEarnings };
+    return this.httpResponse.sendResponse(response, ORDERRESPONSE.PLATFORM_EARNING, platformTotalEarnings)
   }
-  
-  }
+
+
+
+
+
+}

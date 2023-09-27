@@ -18,61 +18,44 @@ export class ChatsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService
-  ) {}
+  ) { }
 
-  
+
+
+
   async getUserFromSocket(socket: Socket) {
     const authHeader = socket.handshake.headers.authorization;
     if (!authHeader) {
       throw new WsException('Missing authorization header');
     }
-
     const [, authToken] = authHeader.split(' ');
-
     if (!authToken) {
       throw new WsException('Invalid authorization token');
     }
-
     try {
-        const payload: JwtPayload = this.jwtService.verify(authToken, {
-            secret: 'your_secret_key'
-        })
-        const user = await this.userRepository.findOne({where:{email:payload.email}})
+      const payload: JwtPayload = this.jwtService.verify(authToken, {
+        secret: 'your_secret_key'
+      })
+      const user = await this.userRepository.findOne({ where: { email: payload.email } })
       if (!user) {
         throw new WsException('User not found');
       }
-
       return user;
     } catch (error) {
       throw new WsException('Invalid credentials');
     }
   }
 
-  async createMessage(message: string, userId: number,receiverId: number) {
-    const user = await this.userRepository.findOne({where:{id:userId}}); 
-    // console.log('user.role----',user.role)
+
+
+
+  async createMessage(message: string, userId: number, receiverId: number) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
     const uId = user.id
-    const receiver = await this.userRepository.findOne({where: {id: receiverId}})
-    // console.log('receiver.role-----',receiver.role)
+    const receiver = await this.userRepository.findOne({ where: { id: receiverId } })
     if (!user || !receiver) {
       throw new WsException('sender or receiver not found');
     }
-
-    // const allowedRoles: {user:string, receiver: string}[] = [
-    //   {user:'user', receiver: 'admin'},
-    //   {user: 'user', receiver: 'seller'},
-    //   {user: 'seller', receiver: 'user'},
-    //   {user: 'admin', receiver: 'user'},
-    // ] 
-
-    // const isAllowed = allowedRoles.some(roleSet =>
-    //   roleSet.user.includes(user.role) && roleSet.receiver.includes(receiver.role)
-    //   )
-
-    // if(!isAllowed)
-    // {
-    //  throw new WsException('Unauthorized chat');
-    // }
 
     const newMessage = new Message();
     newMessage.message = message;
@@ -81,6 +64,9 @@ export class ChatsService {
     await this.messageRepository.save(newMessage);
     return newMessage;
   }
+
+
+
 
   async getChatsBetweenSenderAndReceiver(senderId: number, receiverId: number) {
     const chats = await this.messageRepository
@@ -95,7 +81,13 @@ export class ChatsService {
   }
 
 
+
+
   async getAllMessages() {
     return this.messageRepository.find({ relations: ['user'] });
   }
+
+
+
+  
 }

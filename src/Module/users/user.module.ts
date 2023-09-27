@@ -12,9 +12,8 @@ import { GoogleStrategy } from 'src/Middleware/google.strategy';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { httpResponse } from 'src/Middleware/httpResponse';
-
-
-
+import * as dotenv from 'dotenv';
+dotenv.config()
 
 @Module({
   imports: [ ThrottlerModule.forRoot([
@@ -25,7 +24,7 @@ import { httpResponse } from 'src/Middleware/httpResponse';
   ]),
     TypeOrmModule.forFeature([User,Session]),
     JwtModule.register({ 
-      secret: 'your_secret_key', 
+      secret: 'user_secret_key',
       signOptions: { expiresIn: '1h' },
     }),
     CartModule,AddressModule

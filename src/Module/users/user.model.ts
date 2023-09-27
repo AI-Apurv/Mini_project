@@ -3,4 +3,4 @@ export enum Userstatus {
     active,
     blocked,
     deleted,
-  }
+  } 

@@ -13,6 +13,13 @@ import { AddressResponseMessages } from 'src/common/responses/address.response';
 export class AddressController {
   constructor(private readonly addressService: AddressService) {}
   
+
+   /**
+ * @author Apurv
+ * @description This function will used for adding new address
+ * @Body CreateAddressDto
+ * @payload street , city , state , postal code
+ */
   @ApiBearerAuth()
   @ApiOperation({summary:'add  new address'})
   @Post('add')
@@ -33,6 +40,12 @@ export class AddressController {
     }
   }
 
+   /**
+ * @author Apurv
+ * @description This function will used for updating the existing address
+ * @Body updateAddressDto
+ * @payload street , city , state , postal code
+ */
   @ApiBearerAuth()
   @ApiOperation({summary:'update the existing address'})
   @UseGuards(JwtAuthGuard)
@@ -44,6 +57,11 @@ export class AddressController {
     return {message : AddressResponseMessages.ADDRESS_UPDATED}
   }
 
+   /**
+ * @author Apurv
+ * @description This function will used for deleting the address
+ * @Param addressId
+ */
   @ApiBearerAuth()
   @ApiOperation({summary:'Delete the address'})
   @UseGuards(JwtAuthGuard)

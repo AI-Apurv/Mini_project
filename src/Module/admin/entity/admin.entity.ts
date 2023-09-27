@@ -8,7 +8,7 @@ export class Admin {
   @Column()
   username: string;
 
-  @Column()  
+  @Column()
   firstName: string;
 
   @Column()
@@ -20,12 +20,12 @@ export class Admin {
   @Column()
   password: string;
 
-  @Column({default: 'admin'})
+  @Column({ default: 'admin' })
   role: string;
 
   @Column({ default: false })
   isTwoFactorEnabled: boolean;
 
-  @Column({nullable: true})
-  secretKey: string 
+  @Column({ nullable: true })
+  secretKey: string
 }
